@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* --- NUEVO: Estilos para el link de navegación activo --- */
+.nav-link.active {
+    background-color: #d1fae5; /* bg-green-100 */
+    color: #065f46; /* text-green-800 */
+}
+html.dark .nav-link.active {
+    background-color: rgba(6, 78, 59, 0.5); /* dark:bg-green-900/50 */
+    color: #6ee7b7; /* dark:text-green-300 */
+}
+/* Estilo para los inactivos (para el hover) */
+.nav-link.inactive {
+    color: #4b5563; /* text-gray-600 */
+}
+.nav-link.inactive:hover {
+    background-color: #f3f4f6; /* hover:bg-gray-100 */
+}
+html.dark .nav-link.inactive {
+    color: #d1d5db; /* dark:text-gray-300 */
+}
+html.dark .nav-link.inactive:hover {
+    background-color: #374151; /* dark:hover:bg-gray-700 */
+}
+
+/* Animaciones (sin cambios) */
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Estilo para la barra de desplazamiento (sin cambios) */
+/* ... (el resto de tu css de scrollbar va aquí) ... */
+:root {
+    --scrollbar-thumb: #888;
+    --scrollbar-track: #f1f1f1;
+}
+
+html.dark {
+    --scrollbar-thumb: #555;
+    --scrollbar-track: #2d3748;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+    background: #718096;
+}
