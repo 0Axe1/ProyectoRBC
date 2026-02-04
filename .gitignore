@@ -2,3 +2,5 @@ config/db_connection.php
 back/
 *.SQL
 .env
+.idx/
+.idx/**

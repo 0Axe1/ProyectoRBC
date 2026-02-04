@@ -1,10 +1,13 @@
 <?php
 // Iniciar la sesión es lo PRIMERO que se debe hacer.
-session_start();
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 
 // --- ¡NUEVO! VALIDACIÓN DE TOKEN CSRF ---
 // Compara el token enviado con el guardado en la sesión.
-if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+// Se verifica que ambos tokens existan antes de compararlos.
+if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
     // Si no coinciden, es un intento de CSRF o un error de sesión.
     header('Location: ../login.php?error=csrf');
     exit;
