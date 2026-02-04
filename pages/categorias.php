@@ -20,7 +20,7 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 ?>
 
-<div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md fade-in">
+<div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg fade-in">
     <!-- Contenedor de mensajes -->
     <div id="message-container"></div>
 
@@ -47,7 +47,7 @@ $stmt->execute($params);
                     <i data-lucide="search" class="w-5 h-5"></i>
                 </span>
             </div>
-            <button type="submit" class="px-4 py-2 flex items-center justify-center bg-green-600 text-white rounded-lg hover:bg-green-700">
+            <button type="submit" class="px-4 py-2 flex items-center justify-center bg-green-600 text-white rounded-lg hover:bg-green-700 transition-transform duration-300 hover:scale-105">
                 Buscar
             </button>
             <?php if (!empty($search_term)): ?>
@@ -112,7 +112,7 @@ $stmt->execute($params);
 
 <!-- MODAL PARA AGREGAR/EDITAR CATEGORÍA -->
 <div id="categoria-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 dark:bg-opacity-80 flex items-center justify-center hidden z-30">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-lg transform transition-all duration-300 ease-out">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-lg transform transition-all duration-300 ease-out">
         <div class="flex justify-between items-center mb-6">
             <h4 id="modal-title" class="text-2xl font-bold text-gray-800 dark:text-gray-100">Agregar Nueva Categoría</h4>
             <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">

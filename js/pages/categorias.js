@@ -1,7 +1,4 @@
-// js/pages/categorias.js
-// (Este archivo es casi idéntico a clientes.js, adaptado para categorías)
-
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('categoria-modal');
     if (!modal) return; 
 
@@ -61,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- MANEJO DE FORMULARIO CON FETCH (CREAR/ACTUALIZAR) ---
     if (categoriaForm) {
-        categoriaForm.addEventListener('submit', async function(e) {
+        categoriaForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const action = formAction.value;
@@ -85,14 +82,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 closeModal();
-                window.showMessage(result.message, 'success', 'message-container');
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage(result.message, 'success', 'message-container');
+                }
                 
                 setTimeout(() => {
                     location.reload();
                 }, 1500);
 
             } catch (error) {
-                window.showMessage(error.message, 'error', modalMessageContainer);
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage(error.message, 'error', 'modal-message-container');
+                }
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = submitText;
@@ -102,13 +103,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- MANEJO DE FORMULARIO CON FETCH (ELIMINAR) ---
     document.querySelectorAll('.delete-form').forEach(form => {
-        form.addEventListener('submit', async function(e) {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const confirmed = await window.showConfirmationModal(
-                'Eliminar Categoría',
-                '¿Estás seguro? No podrás eliminarla si está siendo usada por algún producto.'
-            );
+            const confirmed = typeof window.showConfirmationModal === 'function'
+                ? await window.showConfirmationModal('Eliminar Categoría', '¿Estás seguro? No podrás eliminarla si está siendo usada por algún producto.')
+                : confirm('¿Estás seguro? No podrás eliminarla si está siendo usada por algún producto.');
 
             if (!confirmed) return;
 
@@ -128,14 +128,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error(result.message || `Error ${response.status}`);
                 }
 
-                window.showMessage(result.message, 'success', 'message-container');
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage(result.message, 'success', 'message-container');
+                }
 
                 setTimeout(() => {
                     location.reload();
                 }, 1500);
 
             } catch (error) {
-                window.showMessage(error.message, 'error', 'message-container');
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage(error.message, 'error', 'message-container');
+                }
                 button.disabled = false;
             }
         });

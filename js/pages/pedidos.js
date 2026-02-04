@@ -1,16 +1,13 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('order-modal');
     if (!modal) return;
    
     const runLucide = () => {
-// ... (código de runLucide sin cambios) ...
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
     };
 
-    // --- Selectores del Modal ---
-// ... (código de selectores sin cambios) ...
     const addOrderBtn = document.getElementById('add-order-btn');
     const closeModalBtn = document.getElementById('close-modal-btn');
     const cancelBtn = document.getElementById('cancel-btn');
@@ -18,17 +15,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalTitle = document.getElementById('modal-title');
     const submitBtn = document.getElementById('submit-btn');
     
-    // --- Selectores del Formulario ---
     const formAction = document.getElementById('form-action');
-// ... (código de selectores sin cambios) ...
     const formOrderId = document.getElementById('form-order-id');
     const clienteSelect = document.getElementById('id_cliente');
     const fechaInput = document.getElementById('fecha_cotizacion');
     const direccionInput = document.getElementById('direccion_entrega');
     
-    // --- Selectores de Items ---
     const addItemSection = document.getElementById('add-item-section');
-// ... (código de selectores sin cambios) ...
     const viewModeStatus = document.getElementById('view-mode-status'); 
     const productoSelect = document.getElementById('producto_select');
     const addItemBtn = document.getElementById('add-item-btn');
@@ -36,42 +29,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalPedidoEl = document.getElementById('total-pedido');
     const detallePedidoJsonInput = document.getElementById('detalle_pedido_json');
     
-    // --- Contenedores de Mensajes ---
-// ... (código de selectores sin cambios) ...
-    const messageContainer = document.getElementById('message-container');
     const modalMessageContainer = document.getElementById('modal-message-container');
 
-    // --- Estado ---
-// ... (código de estado sin cambios) ...
     let productosDisponibles = [];
     let detallePedido = []; // Array de objetos: { id, nombre, cantidad, precio }
 
-    // --- Funciones de Mensajes ---
-    const showMessage = (type, text, container) => {
-// ... (código de showMessage sin cambios) ...
-        if (typeof window.showMessage === 'function' && container === messageContainer) {
-            window.showMessage(text, type, 'message-container');
-        } else {
-             const bgColor = type === 'success' ? 'bg-green-100 dark:bg-green-200' : 'bg-red-100 dark:bg-red-200';
-             const textColor = type === 'success' ? 'text-green-800' : 'text-red-800';
-             container.innerHTML = `<div class='my-4 p-4 text-sm ${textColor} ${bgColor} rounded-lg' role='alert'>${text}</div>`;
-
-             if (container === messageContainer) {
-                setTimeout(() => { container.innerHTML = ''; }, 4000);
-             }
+    const showModalError = (text) => {
+        if (typeof window.showMessage === 'function') {
+            window.showMessage(text, 'error', 'modal-message-container');
+        } else if (modalMessageContainer) {
+            modalMessageContainer.innerHTML = `<div class='my-4 p-4 text-sm text-red-800 bg-red-100 dark:bg-red-200 rounded-lg' role='alert'>${text}</div>`;
         }
     };
 
-    // --- Funciones del Modal ---
     const openModal = () => {
-// ... (código de openModal sin cambios) ...
         modal.classList.remove('hidden');
         runLucide();
     };
     const closeModal = () => {
-// ... (código de closeModal sin cambios) ...
         modal.classList.add('hidden');
-        modalMessageContainer.innerHTML = '';
+        if (modalMessageContainer) modalMessageContainer.innerHTML = '';
     };
 
     if(closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
@@ -81,12 +58,10 @@ document.addEventListener('DOMContentLoaded', function() {
     async function fetchFormData() {
         try {
             const response = await fetch('api/pedidos_actions.php?action=get_form_data');
-// ... (código de fetch sin cambios) ...
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || 'Error al cargar datos');
 
-            if(clienteSelect) {
-// ... (código de clienteSelect sin cambios) ...
+            if (clienteSelect) {
                 clienteSelect.innerHTML = '<option value="">Seleccione un cliente</option>';
                 data.clientes.forEach(c => {
                     clienteSelect.innerHTML += `<option value="${c.id_cliente}">${c.nombre_razon_social}</option>`;
@@ -105,8 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             return data;
         } catch (error) {
-// ... (código de catch sin cambios) ...
-            showMessage('error', `No se pudieron cargar los datos del formulario: ${error.message}`, modalMessageContainer);
+            showModalError(`No se pudieron cargar los datos del formulario: ${error.message}`);
         }
     }
 
@@ -136,30 +110,26 @@ document.addEventListener('DOMContentLoaded', function() {
             const precio = parseFloat(document.getElementById('precio').value);
 
             if (!idProducto || !cantidad || !precio) {
-                showMessage('error', 'Por favor, complete todos los campos del producto.', modalMessageContainer);
+                showModalError('Por favor, complete todos los campos del producto.');
                 return;
             }
             if (cantidad <= 0 || precio <= 0) {
-                 showMessage('error', 'La cantidad y el precio deben ser mayores a cero.', modalMessageContainer);
+                showModalError('La cantidad y el precio deben ser mayores a cero.');
                 return;
             }
 
             const producto = productosDisponibles.find(p => p.id_producto == idProducto);
             if (!producto) {
-                 showMessage('error', 'Producto no encontrado.', modalMessageContainer);
+                showModalError('Producto no encontrado.');
                 return;
             }
-            
             const stockActual = parseInt(producto.stock) || 0;
-// ... (código de validación de stock sin cambios) ...
             if (stockActual < cantidad) {
-                showMessage('error', `Stock insuficiente. Solo hay ${stockActual} unidades disponibles.`, modalMessageContainer);
+                showModalError(`Stock insuficiente. Solo hay ${stockActual} unidades disponibles.`);
                 return;
             }
-
             if (detallePedido.some(item => item.id == idProducto)) {
-// ... (código de validación de duplicado sin cambios) ...
-                showMessage('error', 'Este producto ya está en el pedido.', modalMessageContainer);
+                showModalError('Este producto ya está en el pedido.');
                 return;
             }
 
@@ -183,20 +153,20 @@ document.addEventListener('DOMContentLoaded', function() {
         let total = 0;
         
         if(detallePedido.length === 0) {
-             detalleBody.innerHTML = '<tr><td colspan="5" class="px-4 py-3 text-center text-gray-500">Aún no hay productos en el pedido.</td></tr>';
+             detalleBody.innerHTML = '<tr><td colspan="5" class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">Aún no hay productos en el pedido.</td></tr>';
         }
 
         detallePedido.forEach((item, index) => {
             const subtotal = item.cantidad * item.precio;
             total += subtotal;
             detalleBody.innerHTML += `
-                <tr class="border-b dark:border-gray-700">
+                <tr class="border-b dark:border-gray-700 text-gray-900 dark:text-white">
                     <td class="px-4 py-2 font-medium">${item.nombre}</td>
                     <td class="px-4 py-2 text-center">${item.cantidad}</td>
                     <td class="px-4 py-2 text-center">$ ${item.precio.toFixed(2)}</td>
                     <td class="px-4 py-2 text-right font-bold">$ ${subtotal.toFixed(2)}</td>
                     <td class="px-4 py-2 text-center">
-                        ${isEditable ? `<button type="button" class="text-red-500 remove-item-btn" data-index="${index}"><i data-lucide="x-circle" class="w-5 h-5"></i></button>` : ''}
+                        ${isEditable ? `<button type="button" class="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 remove-item-btn" data-index="${index}"><i data-lucide="x-circle" class="w-5 h-5"></i></button>` : ''}
                     </td>
                 </tr>
             `;
@@ -208,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Event listener para "Quitar Item" ---
     if(detalleBody) {
 // ... (código de quitar item sin cambios) ...
-        detalleBody.addEventListener('click', function(e) {
+        detalleBody.addEventListener('click', (e) => {
             const removeBtn = e.target.closest('.remove-item-btn');
             if (removeBtn) {
                 const index = removeBtn.dataset.index;
@@ -250,7 +220,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Lógica para "VER" Pedido ---
     document.querySelectorAll('.view-order-btn').forEach(button => {
         button.addEventListener('click', async () => {
-// ... (código de 'ver' sin cambios) ...
             const id = button.dataset.id;
             
             orderForm.reset();
@@ -299,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderDetalle(false); // Renderizar SIN botones de eliminar
                 
             } catch (error) {
-                showMessage('error', `No se pudieron cargar los detalles del pedido: ${error.message}`, modalMessageContainer);
+                showModalError(`No se pudieron cargar los detalles del pedido: ${error.message}`);
             }
 
             openModal();
@@ -310,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Enviar Formulario (SOLO CREAR) ---
     if(orderForm) {
 // ... (código de submit sin cambios) ...
-        orderForm.addEventListener('submit', async function(e) {
+        orderForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const action = formAction.value;
@@ -319,15 +288,15 @@ document.addEventListener('DOMContentLoaded', function() {
             modalMessageContainer.innerHTML = '';
             
             if (!clienteSelect.value) {
-                showMessage('error', 'Debe seleccionar un cliente.', modalMessageContainer);
+                showModalError('Debe seleccionar un cliente.');
                 return;
             }
-             if (!fechaInput.value) {
-                showMessage('error', 'Debe seleccionar una fecha.', modalMessageContainer);
+            if (!fechaInput.value) {
+                showModalError('Debe seleccionar una fecha.');
                 return;
             }
             if (detallePedido.length === 0) {
-                showMessage('error', 'Debe agregar al menos un producto al pedido.', modalMessageContainer);
+                showModalError('Debe agregar al menos un producto al pedido.');
                 return;
             }
             
@@ -348,14 +317,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!response.ok) throw new Error(result.message || `Error ${response.status}`);
 
                 closeModal();
-                window.showMessage(result.message, 'success', 'message-container');
-                
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage(result.message, 'success', 'message-container');
+                }
+                setTimeout(() => location.reload(), 1500);
             } catch (error) {
-                showMessage('error', error.message, modalMessageContainer);
+                showModalError(error.message);
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Crear Pedido';
@@ -365,7 +332,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // --- Formularios de Acción (Entregar / Cancelar) ---
     const handleActionForm = async (e) => {
-// ... (código de handleActionForm sin cambios) ...
         e.preventDefault();
         const form = e.target;
         const action = form.querySelector('input[name="action"]').value;
@@ -396,20 +362,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
             if (!response.ok) throw new Error(result.message || `Error ${response.status}`);
 
-            window.showMessage(result.message, 'success', 'message-container');
-
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
-
+            if (typeof window.showMessage === 'function') {
+                window.showMessage(result.message, 'success', 'message-container');
+            }
+            setTimeout(() => location.reload(), 1500);
         } catch (error) {
-            window.showMessage(error.message, 'error', 'message-container');
+            if (typeof window.showMessage === 'function') {
+                window.showMessage(error.message, 'error', 'message-container');
+            }
             button.disabled = false;
         }
     };
 
     document.querySelectorAll('.deliver-form').forEach(form => {
-// ... (código de listeners sin cambios) ...
         form.addEventListener('submit', handleActionForm);
     });
     

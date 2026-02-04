@@ -1,114 +1,112 @@
 <?php
 session_start();
-// --- CAMBIO 1: El require_once ahora carga la función conectarDB() ---
-require_once __DIR__ . '/../config/db_connection.php'; 
+header('Content-Type: application/json');
 
-// Función para redirigir con mensajes
-function redirigir($url) {
-    header('Location: ' . $url);
+require_once __DIR__ . '/../config/db_connection.php';
+
+$pdo = null;
+try {
+    $pdo = conectarDB();
+} catch (Exception $e) {
+    error_log('Error de conexión en usuarios_actions: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'Error de conexión a la base de datos.']);
     exit;
 }
 
 // 1. Verificar que el usuario ha iniciado sesión
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../login.php');
+    http_response_code(401);
+    echo json_encode(['status' => 'error', 'message' => 'Acceso no autorizado.']);
     exit;
 }
 
-// 2. VERIFICACIÓN DE PERMISOS
+// 2. Verificación de permisos
 if (!isset($_SESSION['permisos']) || !in_array('ver_usuarios', $_SESSION['permisos'])) {
-    redirigir('../index.php?page=dashboard&error=permiso');
+    http_response_code(403);
+    echo json_encode(['status' => 'error', 'message' => 'No tiene autorización para realizar esta acción.']);
     exit;
 }
 
-// 3. VALIDACIÓN DE TOKEN CSRF
+// 3. Validación de token CSRF
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        redirigir('../index.php?page=usuarios&error=csrf');
+        http_response_code(403);
+        echo json_encode(['status' => 'error', 'message' => 'Error de seguridad al procesar la solicitud. Por favor, recargue la página e intente de nuevo.']);
+        exit;
     }
+} else {
+    http_response_code(405);
+    echo json_encode(['status' => 'error', 'message' => 'Método no permitido.']);
+    exit;
 }
 
-$action = $_POST['action'] ?? $_GET['action'] ?? '';
+$action = $_POST['action'] ?? '';
 
-// --- CAMBIO 2: Conexión Única y Centralizada con PDO ---
 try {
-    $pdo = conectarDB(); // $pdo ahora es la conexión PDO
-} catch (Exception $e) {
-    // Si la conexión falla, se redirige con error de DB.
-    redirigir('../index.php?page=usuarios&error=2');
-}
+    if ($action === 'create' || $action === 'update') {
+        $id_usuario = filter_input(INPUT_POST, 'id_usuario', FILTER_VALIDATE_INT);
+        $nombre_usuario = trim($_POST['nombre_usuario'] ?? '');
+        $contrasena = $_POST['contrasena'] ?? '';
+        $id_rol = filter_input(INPUT_POST, 'id_rol', FILTER_VALIDATE_INT);
 
-
-// --- LÓGICA PARA CREAR O ACTUALIZAR UN USUARIO (MIGRADO A PDO) ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($action === 'create' || $action === 'update')) {
-    
-    $id_usuario = filter_input(INPUT_POST, 'id_usuario', FILTER_VALIDATE_INT);
-    $nombre_usuario = trim($_POST['nombre_usuario']);
-    $contrasena = $_POST['contrasena'];
-    $id_rol = filter_input(INPUT_POST, 'id_rol', FILTER_VALIDATE_INT);
-
-    // Validaciones básicas
-    if (empty($nombre_usuario) || empty($id_rol)) {
-        redirigir('../index.php?page=usuarios&error=1');
-    }
-
-    if ($action === 'create') {
-        if (empty($contrasena)) {
-            redirigir('../index.php?page=usuarios&error=1');
+        if (empty($nombre_usuario) || empty($id_rol)) {
+            throw new Exception('Todos los campos marcados con * son requeridos.');
         }
-        
-        $hash_contrasena = password_hash($contrasena, PASSWORD_DEFAULT);
-        
-        // --- CAMBIO 3: PDO Prepare y Execute (CREATE) ---
-        $sql = "INSERT INTO usuarios (nombre_usuario, contrasena, id_rol) VALUES (?, ?, ?)";
-        $stmt = $pdo->prepare($sql);
-        $ejecutado = $stmt->execute([$nombre_usuario, $hash_contrasena, $id_rol]);
-    
-    } else { // 'update'
-        if (!empty($contrasena)) {
+        if ($action === 'create' && empty($contrasena)) {
+            throw new Exception('La contraseña es obligatoria para crear un usuario.');
+        }
+
+        if ($action === 'create') {
             $hash_contrasena = password_hash($contrasena, PASSWORD_DEFAULT);
-            
-            // --- CAMBIO 4: PDO Prepare y Execute (UPDATE con contraseña) ---
-            $sql = "UPDATE usuarios SET nombre_usuario = ?, contrasena = ?, id_rol = ? WHERE id_usuario = ?";
+            $sql = "INSERT INTO usuarios (nombre_usuario, contrasena, id_rol) VALUES (?, ?, ?)";
             $stmt = $pdo->prepare($sql);
-            $ejecutado = $stmt->execute([$nombre_usuario, $hash_contrasena, $id_rol, $id_usuario]);
+            $stmt->execute([$nombre_usuario, $hash_contrasena, $id_rol]);
+            echo json_encode(['status' => 'success', 'message' => 'Usuario creado exitosamente.']);
         } else {
-            // --- CAMBIO 5: PDO Prepare y Execute (UPDATE sin contraseña) ---
-            $sql = "UPDATE usuarios SET nombre_usuario = ?, id_rol = ? WHERE id_usuario = ?";
-            $stmt = $pdo->prepare($sql);
-            $ejecutado = $stmt->execute([$nombre_usuario, $id_rol, $id_usuario]);
+            if (!empty($contrasena)) {
+                $hash_contrasena = password_hash($contrasena, PASSWORD_DEFAULT);
+                $sql = "UPDATE usuarios SET nombre_usuario = ?, contrasena = ?, id_rol = ? WHERE id_usuario = ?";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([$nombre_usuario, $hash_contrasena, $id_rol, $id_usuario]);
+            } else {
+                $sql = "UPDATE usuarios SET nombre_usuario = ?, id_rol = ? WHERE id_usuario = ?";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([$nombre_usuario, $id_rol, $id_usuario]);
+            }
+            echo json_encode(['status' => 'success', 'message' => 'Usuario actualizado exitosamente.']);
         }
-    }
+    } elseif ($action === 'delete') {
+        $id_usuario = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT);
 
-    if ($ejecutado) {
-        redirigir('../index.php?page=usuarios&success=' . ($action === 'create' ? '1' : '2'));
-    } else {
-        redirigir('../index.php?page=usuarios&error=2');
-    }
-}
+        if ($id_usuario == $_SESSION['user_id']) {
+            throw new Exception('No puedes eliminar tu propio usuario.');
+        }
+        if (!$id_usuario) {
+            throw new Exception('ID de usuario no válido.');
+        }
 
-// --- LÓGICA PARA BORRAR UN USUARIO (MIGRADO A PDO) ---
-if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id_usuario = filter_var($_POST['id'], FILTER_VALIDATE_INT);
-    
-    if ($id_usuario == $_SESSION['user_id']) {
-        redirigir('../index.php?page=usuarios&error=3');
-    }
-
-    if ($id_usuario) {
-        // --- CAMBIO 6: PDO Prepare y Execute (DELETE) ---
         $sql = "DELETE FROM usuarios WHERE id_usuario = ?";
         $stmt = $pdo->prepare($sql);
-        $ejecutado = $stmt->execute([$id_usuario]);
-        
-        if ($ejecutado) {
-            redirigir('../index.php?page=usuarios&success=3');
+        $stmt->execute([$id_usuario]);
+
+        if ($stmt->rowCount() > 0) {
+            echo json_encode(['status' => 'success', 'message' => 'Usuario eliminado exitosamente.']);
         } else {
-            redirigir('../index.php?page=usuarios&error=2');
+            throw new Exception('No se pudo eliminar el usuario.');
         }
+    } else {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => 'Acción no válida.']);
     }
+} catch (PDOException $e) {
+    http_response_code(500);
+    error_log("Error en usuarios_actions: " . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Error al procesar la solicitud en la base de datos.']);
+} catch (Exception $e) {
+    http_response_code(400);
+    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
 
-// Redirigir si no hay una acción POST válida
-redirigir('../index.php?page=usuarios');
-?>
+$pdo = null;
+exit;

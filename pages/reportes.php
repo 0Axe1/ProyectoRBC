@@ -118,7 +118,7 @@ echo "<script>document.getElementById('page-title').textContent = '" . addslashe
 
 ?>
 
-<div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md fade-in">
+<div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg fade-in">
 
     <?php if (!$tipo && !$cliente_id && !$producto_id): ?>
         <!-- VISTA 1: SELECCIÓN PRINCIPAL (Default) -->
@@ -142,7 +142,7 @@ echo "<script>document.getElementById('page-title').textContent = '" . addslashe
             <a href="index.php?page=reportes" class="back-button">
                 <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Volver
             </a>
-            <a href="exportar_pdf.php?<?php echo $query_string; ?>" target="_blank" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm inline-flex items-center">
+            <a href="exportar_pdf.php?<?php echo $query_string; ?>" target="_blank" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm inline-flex items-center transition-transform duration-300 hover:scale-105">
                 <i data-lucide="file-down" class="w-4 h-4 mr-2"></i> Exportar PDF
             </a>
         </div>
@@ -202,7 +202,7 @@ echo "<script>document.getElementById('page-title').textContent = '" . addslashe
             <a href="<?php echo $url_volver; ?>" class="back-button">
                 <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Volver al listado
             </a>
-            <a href="exportar_pdf.php?<?php echo $query_string; ?>" target="_blank" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm inline-flex items-center">
+            <a href="exportar_pdf.php?<?php echo $query_string; ?>" target="_blank" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm inline-flex items-center transition-transform duration-300 hover:scale-105">
                 <i data-lucide="file-down" class="w-4 h-4 mr-2"></i> Exportar PDF
             </a>
         </div>

@@ -1,0 +1,47 @@
+<?php
+
+/**
+ * ¡PLANTILLA DE EJEMPLO!
+ * Instrucciones:
+ * 1. Renombra este archivo a 'db_connection.php'.
+ * 2. Si estás en Local (XAMPP/WAMP), usa los valores por defecto.
+ * 3. Si estás en Railway, el sistema detectará las variables de entorno automáticamente.
+ */
+function conectarDB() {
+    // Intentar obtener variables de entorno (útil para Railway/Producción)
+    // Si no existen, usará los valores locales por defecto.
+    $servidor   = getenv('MYSQLHOST')     ?: 'localhost';
+    $nombre_db  = getenv('MYSQLDATABASE') ?: 'tu_base_de_datos_local';
+    $usuario    = getenv('MYSQLUSER')     ?: 'root';
+    $contrasena = getenv('MYSQLPASSWORD') ?: ''; 
+    $puerto     = getenv('MYSQLPORT')     ?: '3306';
+    $charset    = 'utf8mb4';
+
+    // DSN ajustado para incluir puerto (necesario en muchos servicios de la nube)
+    $dsn = "mysql:host=$servidor;port=$puerto;dbname=$nombre_db;charset=$charset";
+    
+    $options = [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES   => false,
+    ];
+
+    try {
+        $pdo = new PDO($dsn, $usuario, $contrasena, $options);
+        return $pdo;
+    } catch (\PDOException $e) {
+        // Mensaje genérico para no exponer detalles técnicos en la web
+        throw new Exception('Error: No se pudo conectar a la base de datos. Verifique su configuración.');
+    }
+}
+
+/**
+ * --- FUNCIÓN DE AYUDA PARA XSS ---
+ */
+function e($string) {
+    if ($string === null) {
+        return '';
+    }
+    return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
+}
+?>

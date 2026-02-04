@@ -24,7 +24,7 @@ $sql = "SELECT
 $stmt = $pdo->query($sql);
 ?>
 
-<div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md fade-in">
+<div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg fade-in">
     <!-- ¡NUEVO! Contenedor de mensajes (manejado por JS) -->
     <div id="message-container"></div>
 
@@ -125,7 +125,7 @@ $stmt = $pdo->query($sql);
 
 <!-- MODAL PARA NUEVO/EDITAR PEDIDO -->
 <div id="order-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 dark:bg-opacity-80 flex items-center justify-center hidden z-30">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-4xl max-h-[90vh] flex flex-col">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-4xl max-h-[90vh] flex flex-col">
         <div class="flex justify-between items-center mb-6">
             <h4 id="modal-title" class="text-2xl font-bold text-gray-800 dark:text-gray-100">Crear Nuevo Pedido</h4>
             <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -165,19 +165,19 @@ $stmt = $pdo->query($sql);
             <div id="add-item-section">
                 <div class="border dark:border-gray-700 rounded-lg p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                     <div class="md:col-span-4">
-                        <label for="producto_select" class="block text-sm font-medium">Producto</label>
-                        <select id="producto_select" class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg"></select>
+                        <label for="producto_select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Producto</label>
+                        <select id="producto_select" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"></select>
                     </div>
                     <div class="md:col-span-3">
-                        <label for="cantidad" class="block text-sm font-medium">Cantidad</label>
-                        <input type="number" id="cantidad" min="1" class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                        <label for="cantidad" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Cantidad</label>
+                        <input type="number" id="cantidad" min="1" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
                     </div>
                     <div class="md:col-span-2">
-                        <label for="precio" class="block text-sm font-medium">Precio Unit.</label>
-                        <input type="number" id="precio" min="0.01" step="0.01" class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                        <label for="precio" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Precio Unit.</label>
+                        <input type="number" id="precio" min="0.01" step="0.01" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
                     </div>
                     <div class="md:col-span-3 flex">
-                        <button type="button" id="add-item-btn" class="w-full flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        <button type="button" id="add-item-btn" class="w-full flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-transform duration-300 hover:scale-105">
                             <i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> Agregar
                         </button>
                     </div>
@@ -187,14 +187,13 @@ $stmt = $pdo->query($sql);
             <!-- SECCIÓN DETALLE DEL PEDIDO -->
             <div class="flex-grow overflow-y-auto mt-4">
                 <table class="w-full text-sm">
-                    <thead class="sticky top-0 bg-gray-50 dark:bg-gray-700">
+                <thead class="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-white">
                         <tr>
-                            <th class="px-4 py-2 text-left">Producto</th>
-                            <th class="px-4 py-2">Cantidad</th>
-                            <th class="px-4 py-2">Precio Unit.</th>
-                            <th class="px-4 py-2 text-right">Subtotal</th>
-                            <th class="px-4 py-2"></th>
-                        </tr>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase">Producto</th>
+                            <th class="px-4 py-2 text-xs font-semibold uppercase">Cantidad</th>
+                            <th class="px-4 py-2 text-xs font-semibold uppercase">Precio Unit.</th>
+                            <th class="px-4 py-2 text-right text-xs font-semibold uppercase">Subtotal</th>
+                            </tr>
                     </thead>
                     <tbody id="detalle-pedido-body">
                         <!-- Filas de productos se agregarán aquí con JS -->

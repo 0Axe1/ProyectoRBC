@@ -41,11 +41,11 @@ $roles = $roles_result->fetchAll(PDO::FETCH_ASSOC);
 
 ?>
 
-<div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md fade-in">
-    <?php echo $mensaje; // $mensaje ya está escapado ?>
+<div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg fade-in">
+    <div id="message-container"><?php echo $mensaje; ?></div>
     <div class="flex justify-between items-center mb-6">
         <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Gestión de Usuarios</h3>
-        <button id="add-user-btn" class="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+        <button id="add-user-btn" class="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-transform transform hover:scale-105 duration-300">
             <i data-lucide="plus" class="w-5 h-5 mr-2"></i> Agregar Usuario
         </button>
     </div>
@@ -67,20 +67,20 @@ $roles = $roles_result->fetchAll(PDO::FETCH_ASSOC);
                             <td class="px-6 py-4 font-medium text-gray-900 dark:text-white"><?php echo e($usuario['nombre_usuario']); ?></td>
                             <td class="px-6 py-4"><?php echo e($usuario['nombre_rol']); ?></td>
                             <td class="px-6 py-4 text-xs italic"><?php echo e($usuario['permisos_lista'] ?? 'Sin permisos asignados al rol'); ?></td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="edit-btn font-medium text-blue-600 dark:text-blue-500 hover:underline mr-4"
+                            <td class="px-6 py-4 flex space-x-2 justify-end">
+                                <button class="edit-btn flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-900/80 px-3 py-1 rounded-lg"
                                     data-id="<?php echo e($usuario['id_usuario']); ?>"
                                     data-nombre="<?php echo e($usuario['nombre_usuario']); ?>"
                                     data-id-rol="<?php echo e($usuario['id_rol']); ?>">
-                                    Editar
+                                    <i data-lucide="edit" class="w-4 h-4 mr-1"></i> Editar
                                 </button>
                                
-                                <form action="api/usuarios_actions.php" method="POST" class="inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar a este usuario?');">
+                                <form action="api/usuarios_actions.php" method="POST" class="inline delete-form">
                                     <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="id" value="<?php echo e($usuario['id_usuario']); ?>">
-                                    <button type="submit" class="font-medium text-red-600 dark:text-red-500 hover:underline">
-                                        Eliminar
+                                    <button type="submit" class="flex items-center text-sm font-medium text-red-600 hover:text-red-800 bg-red-100 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-400 dark:hover:bg-red-900/80 px-3 py-1 rounded-lg">
+                                        <i data-lucide="trash-2" class="w-4 h-4 mr-1"></i> Eliminar
                                     </button>
                                 </form>
                             </td>
@@ -93,10 +93,11 @@ $roles = $roles_result->fetchAll(PDO::FETCH_ASSOC);
 </div>
 
 <!-- MODAL PARA USUARIOS (MIGRADO) -->
-<div id="user-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden z-30">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-lg">
+<div id="user-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 dark:bg-opacity-80 flex items-center justify-center hidden z-30">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-lg">
         <form id="user-form" action="api/usuarios_actions.php" method="POST">
-            <h4 id="modal-title" class="text-2xl font-bold mb-6"></h4>
+            <h4 id="modal-title" class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6"></h4>
+            <div id="modal-message-container"></div>
            
             <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
            
@@ -104,12 +105,12 @@ $roles = $roles_result->fetchAll(PDO::FETCH_ASSOC);
             <input type="hidden" name="id_usuario" id="id_usuario">
             <div class="space-y-4">
                 <div>
-                    <label for="nombre_usuario" class="block mb-1">Nombre de Usuario *</label>
-                    <input type="text" id="nombre_usuario" name="nombre_usuario" required class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                    <label for="nombre_usuario" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre de Usuario *</label>
+                    <input type="text" id="nombre_usuario" name="nombre_usuario" required class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                 </div>
                 <div>
-                    <label for="id_rol" class="block mb-1">Rol *</label>
-                    <select id="id_rol" name="id_rol" required class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                    <label for="id_rol" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol *</label>
+                    <select id="id_rol" name="id_rol" required class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                         <option value="">-- Seleccione un rol --</option>
                         <?php foreach ($roles as $rol): ?>
                             <option value="<?php echo e($rol['id_rol']); ?>">
@@ -119,14 +120,14 @@ $roles = $roles_result->fetchAll(PDO::FETCH_ASSOC);
                     </select>
                 </div>
                 <div>
-                    <label for="contrasena" class="block mb-1">Contraseña</label>
-                    <input type="password" id="contrasena" name="contrasena" class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                    <small id="password-help" class="text-xs text-gray-500">Dejar en blanco para no cambiar la contraseña existente.</small>
+                    <label for="contrasena" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña</label>
+                    <input type="password" id="contrasena" name="contrasena" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <small id="password-help" class="text-xs text-gray-500 dark:text-gray-400">Dejar en blanco para no cambiar la contraseña existente.</small>
                 </div>
             </div>
             <div class="flex justify-end space-x-4 mt-8">
-                <button type="button" id="cancel-btn" class="px-6 py-2 bg-gray-200 dark:bg-gray-600 rounded-lg">Cancelar</button>
-                <button type="submit" id="submit-btn" class="px-6 py-2 text-white bg-green-600 rounded-lg"></button>
+                <button type="button" id="cancel-btn" class="px-6 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-500">Cancelar</button>
+                <button type="submit" id="submit-btn" class="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"></button>
             </div>
         </form>
     </div>

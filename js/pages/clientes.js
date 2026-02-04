@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('client-modal');
     if (!modal) return; // Si no está el modal, no ejecutar nada (seguridad)
 
@@ -22,27 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const openModal = () => modal.classList.remove('hidden');
     const closeModal = () => modal.classList.add('hidden');
 
-    /**
-     * Muestra un mensaje de éxito o error.
-     * @param {string} type 'success' o 'error'
-     * @param {string} text El mensaje a mostrar
-     * @param {HTMLElement} container El elemento donde insertar el mensaje
-     */
-    const showMessage = (type, text, container) => {
-        const bgColor = type === 'success' ? 'bg-green-100 dark:bg-green-200' : 'bg-red-100 dark:bg-red-200';
-        const textColor = type === 'success' ? 'text-green-800' : 'text-red-800';
-        
-        container.innerHTML = `<div class='my-4 p-4 text-sm ${textColor} ${bgColor} rounded-lg' role='alert'>${text}</div>`;
-
-        // Autocerrar mensaje principal (fuera del modal)
-        if (container === messageContainer) {
-            setTimeout(() => {
-                container.innerHTML = '';
-            }, 4000);
-        }
-    };
-
-    // --- ¡NUEVO! Función para actualizar el input de contacto ---
+    // --- Función para actualizar el input de contacto ---
     const actualizarInputContacto = () => {
         if (!tipoContactoSelect || !datoContactoInput) return;
 
@@ -130,9 +110,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // --- ¡MODIFICADO! MANEJO DE FORMULARIO CON FETCH (CREAR/ACTUALIZAR) ---
+    // --- Manejo de formulario con Fetch (crear/actualizar) ---
     if (clientForm) {
-        clientForm.addEventListener('submit', async function(e) {
+        clientForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             // --- ¡NUEVO! Validaciones Frontend ---
@@ -144,14 +124,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tipoNombre = selectedOption.dataset.nombre || 'desconocido';
 
                 if (tipoNombre.includes('email') && !isValidEmail(valorContacto)) {
-                    showMessage('error', 'Por favor, introduce un formato de email válido (ej: usuario@correo.com).', modalMessageContainer);
+                    if (typeof window.showMessage === 'function') {
+                        window.showMessage('Por favor, introduce un formato de email válido (ej: usuario@correo.com).', 'error', 'modal-message-container');
+                    }
                     datoContactoInput.focus();
                     return;
                 }
                 
                 if (tipoNombre.includes('telefono') || tipoNombre.includes('whatsapp')) {
                     if (!isValidPhone(valorContacto)) {
-                        showMessage('error', 'El teléfono debe contener solo números, entre 7 y 15 dígitos.', modalMessageContainer);
+                        if (typeof window.showMessage === 'function') {
+                            window.showMessage('El teléfono debe contener solo números, entre 7 y 15 dígitos.', 'error', 'modal-message-container');
+                        }
                         datoContactoInput.focus();
                         return;
                     }
@@ -179,9 +163,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error(result.message || `Error ${response.status}`);
                 }
 
-                // Éxito
                 closeModal();
-                showMessage('success', result.message, messageContainer);
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage(result.message, 'success', 'message-container');
+                }
                 
                 // Recargar la página para ver los cambios.
                 setTimeout(() => {
@@ -189,8 +174,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 1500);
 
             } catch (error) {
-                // Mostrar error DENTRO del modal
-                showMessage('error', error.message, modalMessageContainer);
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage(error.message, 'error', 'modal-message-container');
+                }
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = submitText;
@@ -200,13 +186,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- ¡NUEVO! MANEJO DE FORMULARIO CON FETCH (ELIMINAR) ---
     document.querySelectorAll('.delete-form').forEach(form => {
-        form.addEventListener('submit', async function(e) {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
-
-            // ¡MODIFICADO! Usar un custom confirm modal sería mejor, pero window.confirm() es funcional.
-            if (!confirm('¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.')) {
-                return;
-            }
+            const confirmed = typeof window.showConfirmationModal === 'function'
+                ? await window.showConfirmationModal('Eliminar Cliente', '¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.')
+                : confirm('¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.');
+            if (!confirmed) return;
 
             const formData = new FormData(form);
             const button = form.querySelector('button[type="submit"]');
@@ -224,8 +209,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error(result.message || `Error ${response.status}`);
                 }
 
-                // Éxito
-                showMessage('success', result.message, messageContainer);
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage(result.message, 'success', 'message-container');
+                }
 
                 // Recargar la página para ver los cambios
                 setTimeout(() => {
@@ -233,7 +219,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 1500);
 
             } catch (error) {
-                showMessage('error', error.message, messageContainer);
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage(error.message, 'error', 'message-container');
+                }
                 button.disabled = false;
             }
         });

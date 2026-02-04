@@ -58,7 +58,7 @@ $stmt_tipos = $pdo->query("SELECT id_tipo_contacto, nombre_tipo FROM tipos_conta
 $tipos_contacto = $stmt_tipos->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
-<div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md fade-in">
+<div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg fade-in">
     <!-- ¡NUEVO! Contenedor de mensajes ahora será manejado por JS -->
     <div id="message-container"></div>
 
@@ -86,7 +86,7 @@ $tipos_contacto = $stmt_tipos->fetchAll(PDO::FETCH_ASSOC);
                     <i data-lucide="search" class="w-5 h-5"></i>
                 </span>
             </div>
-            <button type="submit" class="w-full sm:w-auto px-4 py-2 flex items-center justify-center bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+            <button type="submit" class="w-full sm:w-auto px-4 py-2 flex items-center justify-center bg-green-600 text-white rounded-lg hover:bg-green-700 transition-transform duration-300 hover:scale-105">
                 <i data-lucide="search" class="w-4 h-4 mr-2 sm:hidden"></i> <!-- Icono para móvil -->
                 Buscar
             </button>
@@ -192,7 +192,7 @@ $tipos_contacto = $stmt_tipos->fetchAll(PDO::FETCH_ASSOC);
 
 <!-- MODAL PARA AGREGAR/EDITAR CLIENTE -->
 <div id="client-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 dark:bg-opacity-80 flex items-center justify-center hidden z-30">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-lg transform transition-all duration-300 ease-out">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-lg transform transition-all duration-300 ease-out">
         <div class="flex justify-between items-center mb-6">
             <h4 id="modal-title" class="text-2xl font-bold text-gray-800 dark:text-gray-100">Agregar Nuevo Cliente</h4>
             <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
@@ -219,7 +219,7 @@ $tipos_contacto = $stmt_tipos->fetchAll(PDO::FETCH_ASSOC);
                     <input type="text" id="nit_ruc" name="nit_ruc" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                 </div>
                 <div>
-                    <label for="ubicacion" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ubicación</labe>
+                    <label for="ubicacion" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ubicación</label>
                     <input type="text" id="ubicacion" name="ubicacion" required class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                 </div>
                

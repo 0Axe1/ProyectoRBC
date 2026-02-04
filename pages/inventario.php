@@ -55,7 +55,7 @@ $categorias = $stmt_categorias->fetchAll(PDO::FETCH_ASSOC);
 
 ?>
 
-<div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md fade-in">
+<div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg fade-in">
     <div id="message-container"><?php echo $mensaje; ?></div>
 
     <div class="flex justify-between items-center mb-6">
@@ -126,11 +126,11 @@ $categorias = $stmt_categorias->fetchAll(PDO::FETCH_ASSOC);
                                     <i data-lucide="edit" class="w-4 h-4 mr-1"></i> Editar
                                 </button>
                                
-                                <form action="api/inventario_actions.php" method="POST" class="inline" onsubmit="return confirm('¿Seguro que quieres eliminar este producto? No se puede borrar si está asociado a un pedido.');">
+                                <form action="api/inventario_actions.php" method="POST" class="inline delete-form">
                                     <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="id" value="<?php echo e($item['id_producto']); ?>">
-                                    <button type="submit" class="flex items-center text-sm font-medium text-red-600 hover:text-red-800 bg-red-100 hover:bg-red-200 px-3 py-1 rounded-lg" title="Eliminar Producto">
+                                    <button type="submit" class="flex items-center text-sm font-medium text-red-600 hover:text-red-800 bg-red-100 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-400 dark:hover:bg-red-900/80 px-3 py-1 rounded-lg" title="Eliminar Producto">
                                         <i data-lucide="trash-2" class="w-4 h-4 mr-1"></i> Borrar
                                     </button>
                                 </form>
@@ -146,13 +146,13 @@ $categorias = $stmt_categorias->fetchAll(PDO::FETCH_ASSOC);
 </div>
 
 <!-- MODAL PARA AGREGAR/EDITAR PRODUCTO (ADAPTADO) -->
-<div id="product-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden z-30">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-2xl max-h-[90vh] flex flex-col">
+<div id="product-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 dark:bg-opacity-80 flex items-center justify-center hidden z-30">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div class="flex justify-between items-center mb-6">
             <h4 id="modal-title" class="text-2xl font-bold text-gray-800 dark:text-gray-100">Registrar Nuevo Producto</h4>
             <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-6 h-6"></i></button>
         </div>
-       
+        <div id="modal-message-container"></div>
         <form id="product-form" action="api/inventario_actions.php" method="POST" class="flex-grow overflow-y-auto pr-2">
             <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
            
@@ -244,7 +244,7 @@ $categorias = $stmt_categorias->fetchAll(PDO::FETCH_ASSOC);
             </div>
 
             <div class="mt-8 flex justify-end space-x-4 pt-4 border-t dark:border-gray-700">
-                <button type="button" id="cancel-btn" class="px-6 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-600 rounded-lg hover:bg-gray-200">Cancelar</button>
+                <button type="button" id="cancel-btn" class="px-6 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-500">Cancelar</button>
                 <button type="submit" id="submit-btn" class="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">Guardar Producto</button>
             </div>
         </form>
