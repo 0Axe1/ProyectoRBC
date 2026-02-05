@@ -130,19 +130,12 @@ try {
         echo json_encode(['status' => 'success', 'message' => 'Producto y detalles actualizados exitosamente.']);
 
     } elseif ($action === 'delete' && $id_producto) {
-        try {
-            $stmt = $pdo->prepare("DELETE FROM productos WHERE id_producto = ?");
-            $stmt->execute([$id_producto]);
-            if ($stmt->rowCount() > 0) {
-                echo json_encode(['status' => 'success', 'message' => 'Producto eliminado del inventario.']);
-            } else {
-                throw new Exception('No se pudo encontrar el producto a eliminar.');
-            }
-        } catch (PDOException $e) {
-            if ($e->getCode() == '23000') {
-                throw new Exception('No se pudo eliminar el producto. Puede que esté asociado a un pedido o venta.');
-            }
-            throw $e;
+        $stmt = $pdo->prepare("UPDATE productos SET activo = 0 WHERE id_producto = ?");
+        $stmt->execute([$id_producto]);
+        if ($stmt->rowCount() > 0) {
+            echo json_encode(['status' => 'success', 'message' => 'Producto desactivado del inventario.']);
+        } else {
+            throw new Exception('No se pudo encontrar el producto a eliminar.');
         }
     } else {
         http_response_code(400);
