@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const stockInput = document.getElementById('stock');
     const stockContainer = document.getElementById('stock-container');
     const precioInput = document.getElementById('precio');
+    const additionalDetailsContainer = document.getElementById('additional-details-container');
 
     const openModal = () => modal.classList.remove('hidden');
     const closeModal = () => {
@@ -62,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
             formProductId.value = '';
             setFormEnabled(true);
             stockContainer.style.display = 'block';
+            additionalDetailsContainer.classList.add('hidden');
             openModal();
         });
     }
@@ -75,6 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
             fillModalData(button);
             setFormEnabled(true);
             stockContainer.style.display = 'block';
+            additionalDetailsContainer.classList.remove('hidden');
             openModal();
         });
     });
@@ -86,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
             formAction.value = 'view';
             fillModalData(button);
             setFormEnabled(false);
+            additionalDetailsContainer.classList.remove('hidden');
             openModal();
         });
     });

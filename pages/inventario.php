@@ -191,56 +191,56 @@ $categorias = $stmt_categorias->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                 </div>
                 
-                <!-- ¡NUEVO! Campos para detalle_producto -->
-                <hr class="dark:border-gray-600">
-                <h5 class="text-lg font-semibold text-gray-700 dark:text-gray-300">Detalles Adicionales</h5>
+                <div id="additional-details-container" class="hidden">
+                    <hr class="dark:border-gray-600">
+                    <h5 class="text-lg font-semibold text-gray-700 dark:text-gray-300">Detalles Adicionales</h5>
 
-                <div>
-                    <label for="descripcion" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
-                    <textarea id="descripcion" name="descripcion" rows="2" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"></textarea>
-                </div>
+                    <div>
+                        <label for="descripcion" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
+                        <textarea id="descripcion" name="descripcion" rows="2" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"></textarea>
+                    </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label for="variedad" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Variedad</label>
-                        <input type="text" id="variedad" name="variedad" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="variedad" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Variedad</label>
+                            <input type="text" id="variedad" name="variedad" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+                        </div>
+                        <div>
+                            <label for="origen" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Origen</label>
+                            <input type="text" id="origen" name="origen" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+                        </div>
+                        <div>
+                            <label for="calidad" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Calidad</label>
+                            <input type="text" id="calidad" name="calidad" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+                        </div>
                     </div>
-                    <div>
-                        <label for="origen" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Origen</label>
-                        <input type="text" id="origen" name="origen" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                    </div>
-                    <div>
-                        <label for="calidad" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Calidad</label>
-                        <input type="text" id="calidad" name="calidad" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                    </div>
-                </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label for="presentacion" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Presentación</label>
-                        <input type="text" id="presentacion" name="presentacion" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" placeholder="Ej: Saco 50kg">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="presentacion" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Presentación</label>
+                            <input type="text" id="presentacion" name="presentacion" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" placeholder="Ej: Saco 50kg">
+                        </div>
+                        <div>
+                            <label for="unidad_medida" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unidad de Medida</label>
+                            <input type="text" id="unidad_medida" name="unidad_medida" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" placeholder="Ej: kg, L, Unid.">
+                        </div>
+                        <div>
+                            <label for="peso_neto" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Peso Neto</label>
+                            <input type="number" id="peso_neto" name="peso_neto" min="0" step="0.01" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+                        </div>
                     </div>
-                    <div>
-                        <label for="unidad_medida" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unidad de Medida</label>
-                        <input type="text" id="unidad_medida" name="unidad_medida" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" placeholder="Ej: kg, L, Unid.">
-                    </div>
-                    <div>
-                        <label for="peso_neto" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Peso Neto</label>
-                        <input type="number" id="peso_neto" name="peso_neto" min="0" step="0.01" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                    </div>
-                </div>
 
-                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     <div>
-                        <label for="fecha_cosecha" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Cosecha/Lote</label>
-                        <input type="date" id="fecha_cosecha" name="fecha_cosecha" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label for="observaciones" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observaciones</label>
-                        <input type="text" id="observaciones" name="observaciones" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                    </div>
+                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                         <div>
+                            <label for="fecha_cosecha" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Cosecha/Lote</label>
+                            <input type="date" id="fecha_cosecha" name="fecha_cosecha" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="observaciones" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observaciones</label>
+                            <input type="text" id="observaciones" name="observaciones" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+                        </div>
+                     </div>
                  </div>
-                 <!-- FIN DE CAMPOS NUEVOS -->
             </div>
 
             <div class="mt-8 flex justify-end space-x-4 pt-4 border-t dark:border-gray-700">
