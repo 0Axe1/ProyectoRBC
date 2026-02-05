@@ -1,7 +1,10 @@
 <?php
 // ¡CORREGIDO!
 // Se eliminaron la lógica de mensajes GET, ahora se maneja por JS.
-// La conexión $pdo se espera desde index.php
+// --- ¡NUEVO! Lógica de Búsqueda ---
+$search_term = trim($_GET['search'] ?? '');
+$params = [];
+// --- Fin de lo nuevo ---
 
 // --- ¡MODIFICADO! CONSULTA CON FECHAS Y DATOS PARA EDICIÓN ---
 $sql = "SELECT
@@ -19,9 +22,21 @@ $sql = "SELECT
              WHERE id_pedido = ped.id_pedido) as total_pedido
         FROM pedidos ped
         JOIN clientes cli ON ped.id_cliente = cli.id_cliente
-        JOIN estados_pedido est ON ped.id_estado_pedido = est.id_estado_pedido
-        ORDER BY ped.fecha_cotizacion DESC, ped.id_pedido DESC";
-$stmt = $pdo->query($sql);
+        JOIN estados_pedido est ON ped.id_estado_pedido = est.id_estado_pedido";
+
+// --- ¡NUEVO! Añadir condición de búsqueda ---
+if (!empty($search_term)) {
+    // Busca en nombre del cliente O en el ID del pedido
+    $sql .= " WHERE (cli.nombre_razon_social LIKE ? OR ped.id_pedido LIKE ?)";
+    $search_like = '%' . $search_term . '%';
+    $params[] = $search_like;
+    $params[] = $search_like;
+}
+// --- Fin de lo nuevo ---
+
+$sql .= " ORDER BY ped.fecha_cotizacion DESC, ped.id_pedido DESC";
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
 ?>
 
 <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg fade-in">
@@ -35,6 +50,35 @@ $stmt = $pdo->query($sql);
             Nuevo Pedido
         </button>
     </div>
+
+    <!-- ¡NUEVO! Formulario de Búsqueda -->
+    <div class="mb-4">
+        <form action="index.php" method="GET" class="flex flex-wrap items-center gap-2">
+            <!-- Campo oculto para mantener la página actual al buscar -->
+            <input type="hidden" name="page" value="pedidos">
+            
+            <div class="relative flex-grow w-full sm:w-auto">
+                <label for="search" class="sr-only">Buscar pedido</label>
+                <input type="text" id="search" name="search"
+                       class="w-full px-4 py-2 pl-10 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                       placeholder="Buscar por Cliente o ID de Pedido..."
+                       value="<?php echo e($search_term); ?>">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                </span>
+            </div>
+            <button type="submit" class="w-full sm:w-auto px-4 py-2 flex items-center justify-center bg-green-600 text-white rounded-lg hover:bg-green-700 transition-transform duration-300 hover:scale-105">
+                <i data-lucide="search" class="w-4 h-4 mr-2 sm:hidden"></i>
+                Buscar
+            </button>
+            <?php if (!empty($search_term)): ?>
+                <a href="index.php?page=pedidos" class="w-full sm:w-auto px-4 py-2 text-sm text-center text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500">
+                    Limpiar
+                </a>
+            <?php endif; ?>
+        </form>
+    </div>
+    <!-- Fin del Formulario de Búsqueda -->
 
     <div class="overflow-x-auto">
         <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
@@ -115,8 +159,16 @@ $stmt = $pdo->query($sql);
                         </tr>
                     <?php endwhile; ?>
                 <?php else : ?>
-                    <!-- ¡NUEVO! Colspan actualizado -->
-                    <tr><td colspan="8" class="px-6 py-4 text-center">No hay pedidos registrados.</td></tr>
+                    <!-- ¡NUEVO! Colspan y mensaje dinámico -->
+                    <tr>
+                        <td colspan="8" class="px-6 py-4 text-center">
+                            <?php if (!empty($search_term)): ?>
+                                No se encontraron pedidos que coincidan con "<?php echo e($search_term); ?>".
+                            <?php else: ?>
+                                No hay pedidos registrados.
+                            <?php endif; ?>
+                        </td>
+                    </tr>
                 <?php endif; ?>
             </tbody>
         </table>
