@@ -62,11 +62,20 @@ if ($peso_neto === false || $peso_neto === '') $peso_neto = null;
 
 try {
     if ($action === 'create') {
-        if (empty($nombre_producto) || empty($id_categoria) || $stock === null || $precio === null) {
-            throw new Exception('Error. Faltan datos obligatorios (Nombre, Categoría, Stock o Precio).');
+        if (empty($nombre_producto) || empty($id_categoria) || $stock === false || $precio === false) {
+            throw new Exception('Error. Faltan datos obligatorios o los valores son incorrectos (Nombre, Categoría, Stock >= 0, Precio >= 0.01).');
         }
 
         $pdo->beginTransaction();
+
+        // Verificar si ya existe un producto con el mismo nombre
+        $stmt_check = $pdo->prepare("SELECT id_producto FROM productos WHERE nombre_producto = ? AND activo = 1");
+        $stmt_check->execute([$nombre_producto]);
+        if ($stmt_check->fetch()) {
+            $pdo->rollBack();
+            throw new Exception("Ya existe un producto registrado con el nombre '$nombre_producto'.");
+        }
+
         $sql_prod = "INSERT INTO productos (id_categoria, nombre_producto, precio, stock) VALUES (?, ?, ?, ?)";
         $stmt_prod = $pdo->prepare($sql_prod);
         $stmt_prod->execute([$id_categoria, $nombre_producto, $precio, $stock]);
@@ -85,11 +94,20 @@ try {
         echo json_encode(['status' => 'success', 'message' => 'Producto y detalles registrados exitosamente.']);
 
     } elseif ($action === 'update' && $id_producto) {
-        if (empty($nombre_producto) || empty($id_categoria) || $precio === null || $stock === null) {
-            throw new Exception('Error. Faltan datos obligatorios (Nombre, Categoría, Stock o Precio).');
+        if (empty($nombre_producto) || empty($id_categoria) || $precio === false || $stock === false) {
+            throw new Exception('Error. Faltan datos obligatorios o los valores son incorrectos (Nombre, Categoría, Stock >= 0, Precio >= 0.01).');
         }
 
         $pdo->beginTransaction();
+
+        // Verificar si ya existe otro producto con el mismo nombre
+        $stmt_check = $pdo->prepare("SELECT id_producto FROM productos WHERE nombre_producto = ? AND id_producto != ? AND activo = 1");
+        $stmt_check->execute([$nombre_producto, $id_producto]);
+        if ($stmt_check->fetch()) {
+            $pdo->rollBack();
+            throw new Exception("Ya existe otro producto registrado con el nombre '$nombre_producto'.");
+        }
+
         $sql_prod = "UPDATE productos SET id_categoria = ?, nombre_producto = ?, precio = ?, stock = ? WHERE id_producto = ?";
         $stmt_prod = $pdo->prepare($sql_prod);
         $stmt_prod->execute([$id_categoria, $nombre_producto, $precio, $stock, $id_producto]);

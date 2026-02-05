@@ -11,7 +11,7 @@
     } catch (Exception $e) {
         // Error fatal de BD
         // Se usa la función e() para escapar el mensaje antes de mostrarlo
-        die("Error de conexión a la Base de Datos: " . e($e.getMessage())); 
+        die("Error de conexión a la Base de Datos: " . e($e->getMessage())); 
     }
 
     // 4. Ahora incluir el header, que usa la sesión y la función e()
