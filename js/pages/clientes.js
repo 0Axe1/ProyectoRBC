@@ -15,45 +15,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageContainer = document.getElementById('message-container');
     const modalMessageContainer = document.getElementById('modal-message-container');
 
-    // --- ¡NUEVO! Selectores para validación ---
-    const tipoContactoSelect = document.getElementById('id_tipo_contacto');
-    const datoContactoInput = document.getElementById('dato_contacto');
+    // ¡NUEVO! Selectores para teléfono y email
+    const telefonoContactoInput = document.getElementById('telefono_contacto');
+    const emailContactoInput = document.getElementById('email_contacto');
 
     const openModal = () => modal.classList.remove('hidden');
     const closeModal = () => modal.classList.add('hidden');
 
-    // --- Función para actualizar el input de contacto ---
-    const actualizarInputContacto = () => {
-        if (!tipoContactoSelect || !datoContactoInput) return;
-
-        const selectedOption = tipoContactoSelect.options[tipoContactoSelect.selectedIndex];
-        const tipoNombre = selectedOption.dataset.nombre || 'desconocido';
-
-        // Resetear atributos
-        datoContactoInput.removeAttribute('pattern');
-        
-        if (tipoNombre.includes('email')) {
-            datoContactoInput.type = 'email';
-            datoContactoInput.placeholder = 'ejemplo@correo.com';
-            datoContactoInput.maxLength = 100;
-        } else if (tipoNombre.includes('telefono') || tipoNombre.includes('whatsapp')) {
-            datoContactoInput.type = 'tel'; // 'tel' es mejor que 'number' para esto
-            datoContactoInput.placeholder = 'Ej: 71234567 (solo números)';
-            datoContactoInput.pattern = '^[0-9]{7,15}$'; // 7 a 15 dígitos
-            datoContactoInput.maxLength = 15;
-        } else {
-            datoContactoInput.type = 'text';
-            datoContactoInput.placeholder = 'Escribe el contacto aquí';
-            datoContactoInput.maxLength = 255;
-        }
-    };
-
-    // --- ¡NUEVO! Event listener para el cambio de tipo de contacto ---
-    if (tipoContactoSelect) {
-        tipoContactoSelect.addEventListener('change', actualizarInputContacto);
-    }
-
-    // --- ¡NUEVO! Funciones de validación ---
+    // ¡NUEVO! Funciones de validación
     const isValidEmail = (email) => {
         const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         return re.test(String(email).toLowerCase());
@@ -72,9 +41,12 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.textContent = 'Guardar Cliente';
             formAction.value = 'create';
             formClientId.value = '';
-            tipoContactoSelect.value = '1'; // Resetear al primer valor
             modalMessageContainer.innerHTML = ''; // Limpiar mensajes del modal
-            actualizarInputContacto(); // ¡NUEVO! Actualizar input al abrir
+            
+            // Limpiar campos específicos
+            if (telefonoContactoInput) telefonoContactoInput.value = '';
+            if (emailContactoInput) emailContactoInput.value = '';
+
             openModal();
         });
     }
@@ -92,11 +64,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('nombre_razon_social').value = button.dataset.nombre;
             document.getElementById('ubicacion').value = button.dataset.ubicacion;
             document.getElementById('nit_ruc').value = button.dataset.nit;
-            datoContactoInput.value = button.dataset.contacto; // ¡MODIFICADO! Usar la variable
-            tipoContactoSelect.value = button.dataset.idTipoContacto; // ¡MODIFICADO! Usar la variable
+            
+            // Llenar campos específicos
+            if (telefonoContactoInput) telefonoContactoInput.value = button.dataset.telefono || '';
+            if (emailContactoInput) emailContactoInput.value = button.dataset.email || '';
             
             modalMessageContainer.innerHTML = ''; // Limpiar mensajes del modal
-            actualizarInputContacto(); // ¡NUEVO! Actualizar input al abrir
             openModal();
         });
     });
@@ -117,29 +90,24 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // --- ¡NUEVO! Validaciones Frontend ---
             modalMessageContainer.innerHTML = ''; // Limpiar mensajes previos
-            const valorContacto = datoContactoInput.value;
             
-            if (valorContacto) { // Solo validar si no está vacío
-                const selectedOption = tipoContactoSelect.options[tipoContactoSelect.selectedIndex];
-                const tipoNombre = selectedOption.dataset.nombre || 'desconocido';
-
-                if (tipoNombre.includes('email') && !isValidEmail(valorContacto)) {
-                    if (typeof window.showMessage === 'function') {
-                        window.showMessage('Por favor, introduce un formato de email válido (ej: usuario@correo.com).', 'error', 'modal-message-container');
-                    }
-                    datoContactoInput.focus();
-                    return;
+            const telefonoValue = telefonoContactoInput ? telefonoContactoInput.value : '';
+            const emailValue = emailContactoInput ? emailContactoInput.value : '';
+            
+            if (telefonoValue && !isValidPhone(telefonoValue)) {
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage('El teléfono debe contener solo números, entre 7 y 15 dígitos.', 'error', 'modal-message-container');
                 }
-                
-                if (tipoNombre.includes('telefono') || tipoNombre.includes('whatsapp')) {
-                    if (!isValidPhone(valorContacto)) {
-                        if (typeof window.showMessage === 'function') {
-                            window.showMessage('El teléfono debe contener solo números, entre 7 y 15 dígitos.', 'error', 'modal-message-container');
-                        }
-                        datoContactoInput.focus();
-                        return;
-                    }
+                telefonoContactoInput.focus();
+                return;
+            }
+            
+            if (emailValue && !isValidEmail(emailValue)) {
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage('Por favor, introduce un formato de email válido (ej: usuario@correo.com).', 'error', 'modal-message-container');
                 }
+                emailContactoInput.focus();
+                return;
             }
             // --- Fin de Validaciones Frontend ---
 

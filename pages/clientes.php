@@ -9,27 +9,17 @@ $params = [];
 // --- Fin de lo nuevo ---
 
 
-// --- ¡MODIFICADO! CONSULTA OPTIMIZADA CON LEFT JOIN Y FECHAS ---
+// --- ¡MODIFICADO! CONSULTA OPTIMIZADA SIN CONTACTOS EN LA PRINCIPAL ---
 $sql = "SELECT
             c.id_cliente,
             c.nombre_razon_social,
             c.nit_ruc,
             c.ubicacion,
-            -- ¡NUEVO! Fechas formateadas para mostrar
             DATE_FORMAT(c.fecha_creacion, '%d/%m/%Y %H:%i') as fecha_creacion_fmt,
-            DATE_FORMAT(c.fecha_actualizacion, '%d/%m/%Y %H:%i') as fecha_actualizacion_fmt,
-            -- Fin de lo nuevo
-            MAX(CASE WHEN cc.id_contacto = min_contacto.min_id_contacto THEN cc.dato_contacto END) as contacto,
-            MAX(CASE WHEN cc.id_contacto = min_contacto.min_id_contacto THEN cc.id_tipo_contacto END) as id_tipo_contacto
-        FROM 
+            DATE_FORMAT(c.fecha_actualizacion, '%d/%m/%Y %H:%i') as fecha_actualizacion_fmt
+        FROM
             clientes c
-        LEFT JOIN 
-            contactos_cliente cc ON c.id_cliente = cc.id_cliente
-        LEFT JOIN 
-            (SELECT id_cliente, MIN(id_contacto) as min_id_contacto 
-             FROM contactos_cliente 
-             GROUP BY id_cliente) min_contacto ON c.id_cliente = min_contacto.id_cliente
-        WHERE 
+        WHERE
             c.estado = 1";
 
 // --- ¡NUEVO! Añadir condición de búsqueda ---
@@ -43,17 +33,49 @@ if (!empty($search_term)) {
 }
 // --- Fin de lo nuevo ---
         
-$sql .= " GROUP BY
-            c.id_cliente, c.nombre_razon_social, c.nit_ruc, c.ubicacion, 
-            c.fecha_creacion, c.fecha_actualizacion -- ¡NUEVO! Añadido al GROUP BY
-        ORDER BY 
+$sql .= " ORDER BY
             c.nombre_razon_social ASC";
          
 // --- ¡MODIFICADO! Usar prepared statement para la búsqueda ---
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
-// --- Fin de la modificación ---
+$clientes_data = $stmt->fetchAll(PDO::FETCH_ASSOC); // Fetch all client data
 
+// --- ¡NUEVO! Cargar todos los contactos para los clientes obtenidos ---
+$cliente_ids = array_column($clientes_data, 'id_cliente');
+$contacts_by_client = [];
+
+if (!empty($cliente_ids)) {
+    $placeholders = implode(',', array_fill(0, count($cliente_ids), '?'));
+    $sql_contacts = "SELECT cc.id_cliente, cc.dato_contacto, t.nombre_tipo
+                     FROM contactos_cliente cc
+                     JOIN tipos_contacto t ON cc.id_tipo_contacto = t.id_tipo_contacto
+                     WHERE cc.id_cliente IN ($placeholders)";
+    $stmt_contacts = $pdo->prepare($sql_contacts);
+    $stmt_contacts->execute($cliente_ids);
+    
+    while ($contact = $stmt_contacts->fetch(PDO::FETCH_ASSOC)) {
+        $contacts_by_client[$contact['id_cliente']][] = $contact;
+    }
+}
+
+// --- ¡NUEVO! Procesar clientes para adjuntar teléfonos y emails ---
+foreach ($clientes_data as &$cliente) {
+    $cliente['telefonos'] = [];
+    $cliente['emails'] = [];
+    if (isset($contacts_by_client[$cliente['id_cliente']])) {
+        foreach ($contacts_by_client[$cliente['id_cliente']] as $contact) {
+            if (strpos(strtolower($contact['nombre_tipo']), 'telefono') !== false) {
+                $cliente['telefonos'][] = $contact['dato_contacto'];
+            } elseif (strpos(strtolower($contact['nombre_tipo']), 'email') !== false) {
+                $cliente['emails'][] = $contact['dato_contacto'];
+            }
+        }
+    }
+}
+unset($cliente); // Unset the reference
+
+// Se obtiene los tipos de contacto, pero ya no se usan directamente en el formulario de edición
 $stmt_tipos = $pdo->query("SELECT id_tipo_contacto, nombre_tipo FROM tipos_contacto ORDER BY nombre_tipo");
 $tipos_contacto = $stmt_tipos->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -109,7 +131,12 @@ $tipos_contacto = $stmt_tipos->fetchAll(PDO::FETCH_ASSOC);
                     <th scope="col" class="px-6 py-3">
                         <!-- ¡NUEVO! Icono de diseño -->
                         <i data-lucide="phone" class="w-4 h-4 inline-block mr-1 opacity-70"></i>
-                        Contacto
+                        Teléfono
+                    </th>
+                    <th scope="col" class="px-6 py-3">
+                        <!-- ¡NUEVO! Icono de diseño -->
+                        <i data-lucide="mail" class="w-4 h-4 inline-block mr-1 opacity-70"></i>
+                        Email
                     </th>
                     <th scope="col" class="px-6 py-3">
                         <!-- ¡NUEVO! Icono de diseño -->
@@ -130,12 +157,13 @@ $tipos_contacto = $stmt_tipos->fetchAll(PDO::FETCH_ASSOC);
                 </tr>
             </thead>
             <tbody>
-                <?php if ($stmt && $stmt->rowCount() > 0) : ?>
-                    <?php while($cliente = $stmt->fetch(PDO::FETCH_ASSOC)): ?>
+                <?php if ($clientes_data && count($clientes_data) > 0) : ?>
+                    <?php foreach($clientes_data as $cliente): ?>
                         <tr class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
                             <td class="px-6 py-4 font-medium text-gray-900 dark:text-white"><?php echo e($cliente['nombre_razon_social']); ?></td>
                             <td class="px-6 py-4 text-gray-600 dark:text-gray-400"><?php echo e($cliente['nit_ruc'] ?? 'N/A'); ?></td>
-                            <td class="px-6 py-4 text-gray-600 dark:text-gray-400"><?php echo e($cliente['contacto'] ?? 'N/A'); ?></td>
+                            <td class="px-6 py-4 text-gray-600 dark:text-gray-400"><?php echo e(implode(', ', $cliente['telefonos'] ?? ['N/A'])); ?></td>
+                            <td class="px-6 py-4 text-gray-600 dark:text-gray-400"><?php echo e(implode(', ', $cliente['emails'] ?? ['N/A'])); ?></td>
                             <td class="px-6 py-4"><?php echo e($cliente['ubicacion']); ?></td>
                             
                             <!-- ¡NUEVO! Celdas de fecha -->
@@ -154,8 +182,8 @@ $tipos_contacto = $stmt_tipos->fetchAll(PDO::FETCH_ASSOC);
                                         data-nombre="<?php echo e($cliente['nombre_razon_social']); ?>"
                                         data-nit="<?php echo e($cliente['nit_ruc'] ?? ''); ?>"
                                         data-ubicacion="<?php echo e($cliente['ubicacion']); ?>"
-                                        data-contacto="<?php echo e($cliente['contacto'] ?? ''); ?>"
-                                        data-id-tipo-contacto="<?php echo e($cliente['id_tipo_contacto'] ?? '1'); ?>">
+                                        data-telefono="<?php echo e(implode(', ', $cliente['telefonos'] ?? '')); ?>"
+                                        data-email="<?php echo e(implode(', ', $cliente['emails'] ?? '')); ?>">
                                     <i data-lucide="edit" class="w-4 h-4 mr-1"></i> Editar
                                 </button>
                                
@@ -171,12 +199,12 @@ $tipos_contacto = $stmt_tipos->fetchAll(PDO::FETCH_ASSOC);
                                 </form>
                             </td>
                         </tr>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 <?php else : ?>
-                    <!-- ¡NUEVO! Colspan actualizado de 5 a 7 -->
+                    <!-- ¡NUEVO! Colspan actualizado de 5 a 8 -->
                     <!-- ¡NUEVO! Mensaje dinámico si no hay resultados de búsqueda -->
                     <tr class="bg-white dark:bg-gray-800">
-                        <td colspan="7" class="px-6 py-4 text-center">
+                        <td colspan="8" class="px-6 py-4 text-center">
                             <?php if (!empty($search_term)): ?>
                                 No se encontraron clientes que coincidan con "<?php echo e($search_term); ?>".
                             <?php else: ?>
@@ -223,19 +251,15 @@ $tipos_contacto = $stmt_tipos->fetchAll(PDO::FETCH_ASSOC);
                     <input type="text" id="ubicacion" name="ubicacion" required class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                 </div>
                
+                <!-- ¡MODIFICADO! Se eliminan los campos de tipo y dato de contacto genéricos -->
+                <!-- Se añaden campos específicos para teléfono y email -->
                 <div>
-                    <label for="id_tipo_contacto" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de Contacto</label>
-                    <select id="id_tipo_contacto" name="id_tipo_contacto" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
-                        <?php foreach ($tipos_contacto as $tipo): ?>
-                            <option value="<?php echo e($tipo['id_tipo_contacto']); ?>">
-                                <?php echo e($tipo['nombre_tipo']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                    <label for="telefono_contacto" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
+                    <input type="tel" id="telefono_contacto" name="telefono_contacto" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Ej: 71234567 (solo números)" pattern="^[0-9]{7,15}$" maxLength="15">
                 </div>
                 <div>
-                    <label for="dato_contacto" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dato de Contacto (Teléfono, Email, etc.)</label>
-                    <input type="text" id="dato_contacto" name="dato_contacto" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <label for="email_contacto" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                    <input type="email" id="email_contacto" name="email_contacto" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="ejemplo@correo.com" maxLength="100">
                 </div>
             </div>
 
