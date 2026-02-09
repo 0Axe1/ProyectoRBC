@@ -14,7 +14,6 @@ try {
     exit;
 }
 
-// ... (código de verificación de sesión y permisos sin cambios) ...
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['status' => 'error', 'message' => 'Acceso no autorizado.']);
@@ -44,8 +43,6 @@ try {
         $clientes_sql = "SELECT id_cliente, nombre_razon_social FROM clientes WHERE estado = 1 ORDER BY nombre_razon_social ASC";
         $response['clientes'] = $pdo->query($clientes_sql)->fetchAll(PDO::FETCH_ASSOC);
 
-        // --- ¡MODIFICADO! ---
-        // Se une con detalle_producto para crear un nombre descriptivo
         $productos_sql = "SELECT 
                             p.id_producto, 
                             CONCAT(
@@ -73,7 +70,6 @@ try {
         }
 
         $sql_head = "SELECT id_pedido, id_cliente, fecha_cotizacion, direccion_entrega FROM pedidos WHERE id_pedido = ?";
-// ... (código de $stmt_head sin cambios) ...
         $stmt_head = $pdo->prepare($sql_head);
         $stmt_head->execute([$id_pedido]);
         $head = $stmt_head->fetch(PDO::FETCH_ASSOC);
@@ -82,8 +78,6 @@ try {
              throw new Exception('Pedido no encontrado.', 404);
         }
 
-        // --- ¡MODIFICADO! ---
-        // Se une con detalle_producto para mostrar el nombre descriptivo
         $sql_details = "SELECT 
                             dp.id_producto, 
                             CONCAT(
@@ -93,12 +87,12 @@ try {
                                 ', ', 
                                 COALESCE(dprod.presentacion, 'N/A'), 
                                 ')'
-                            ) AS nombre_producto, -- Se mantiene el alias 'nombre_producto' para compatibilidad con JS
+                            ) AS nombre_producto,
                             dp.cantidad_pedido, 
                             dp.precio_unitario
                         FROM detalle_de_pedido dp
                         JOIN productos p ON dp.id_producto = p.id_producto
-                        LEFT JOIN detalle_producto dprod ON p.id_producto = dprod.id_producto -- Nuevo JOIN
+                        LEFT JOIN detalle_producto dprod ON p.id_producto = dprod.id_producto
                         WHERE dp.id_pedido = ?";
         $stmt_details = $pdo->prepare($sql_details);
         $stmt_details->execute([$id_pedido]);
@@ -108,7 +102,6 @@ try {
 
     // --- CREAR UN NUEVO PEDIDO ---
     } elseif ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-// ... (código de 'create' sin cambios, ya que usa los IDs) ...
         $id_cliente = filter_input(INPUT_POST, 'id_cliente', FILTER_VALIDATE_INT);
         $fecha_cotizacion = $_POST['fecha_cotizacion'] ?? null;
         $direccion_entrega = trim($_POST['direccion_entrega'] ?? '');
@@ -116,8 +109,31 @@ try {
         $detalle_pedido = json_decode($detalle_json, true);
         $ID_ESTADO_PENDIENTE = 1;
 
-        if (empty($id_cliente) || empty($fecha_cotizacion) || empty($detalle_pedido) || !is_array($detalle_pedido)) {
-            throw new Exception('Datos incompletos. Seleccione un cliente, fecha y agregue al menos un producto.', 400);
+        if (empty($id_cliente)) {
+            throw new Exception('Debe seleccionar un cliente.', 400);
+        }
+        if (empty($fecha_cotizacion)) {
+            throw new Exception('Debe seleccionar una fecha de cotización.', 400);
+        }
+        // Validación de formato de fecha
+        if (!DateTime::createFromFormat('Y-m-d', $fecha_cotizacion)) {
+            throw new Exception('Formato de fecha de cotización no válido.', 400);
+        }
+        // Validación: la fecha de cotización no debe ser futura
+        if (strtotime($fecha_cotizacion) > strtotime(date('Y-m-d'))) {
+            throw new Exception('La fecha de cotización no puede ser futura.', 400);
+        }
+
+        // Validación de dirección de entrega
+        if (empty($direccion_entrega)) {
+            throw new Exception('La dirección de entrega es obligatoria.', 400);
+        }
+        if (strlen($direccion_entrega) < 5 || strlen($direccion_entrega) > 255) {
+            throw new Exception('La dirección de entrega debe tener entre 5 y 255 caracteres.', 400);
+        }
+
+        if (empty($detalle_pedido) || !is_array($detalle_pedido)) {
+            throw new Exception('Debe agregar al menos un producto al pedido.', 400);
         }
 
         $pdo->beginTransaction();
@@ -137,7 +153,7 @@ try {
             $precio = filter_var($item['precio'], FILTER_VALIDATE_FLOAT);
             
             if (!$id_producto || !$cantidad || !$precio || $cantidad <= 0 || $precio <= 0) {
-                 throw new Exception('Detalle de producto no válido.', 400);
+                 throw new Exception('Detalle de producto no válido (ID, cantidad o precio).', 400);
             }
             $subtotal = $cantidad * $precio;
 
@@ -158,15 +174,36 @@ try {
 
     // --- ACTUALIZAR UN PEDIDO (SOLO DATOS GENERALES) ---
     } elseif ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-// ... (código de 'update' sin cambios) ...
         $id_pedido = filter_input(INPUT_POST, 'id_pedido', FILTER_VALIDATE_INT);
         $id_cliente = filter_input(INPUT_POST, 'id_cliente', FILTER_VALIDATE_INT);
         $fecha_cotizacion = $_POST['fecha_cotizacion'] ?? null;
         $direccion_entrega = trim($_POST['direccion_entrega'] ?? '');
         $ID_ESTADO_PENDIENTE = 1;
 
-        if (empty($id_pedido) || empty($id_cliente) || empty($fecha_cotizacion)) {
-            throw new Exception('Datos incompletos. Cliente y fecha son obligatorios.', 400);
+        if (empty($id_pedido)) {
+            throw new Exception('ID de pedido no válido.', 400);
+        }
+        if (empty($id_cliente)) {
+            throw new Exception('Debe seleccionar un cliente.', 400);
+        }
+        if (empty($fecha_cotizacion)) {
+            throw new Exception('Debe seleccionar una fecha de cotización.', 400);
+        }
+        // Validación de formato de fecha
+        if (!DateTime::createFromFormat('Y-m-d', $fecha_cotizacion)) {
+            throw new Exception('Formato de fecha de cotización no válido.', 400);
+        }
+        // Validación: la fecha de cotización no debe ser futura
+        if (strtotime($fecha_cotizacion) > strtotime(date('Y-m-d'))) {
+            throw new Exception('La fecha de cotización no puede ser futura.', 400);
+        }
+
+        // Validación de dirección de entrega
+        if (empty($direccion_entrega)) {
+            throw new Exception('La dirección de entrega es obligatoria.', 400);
+        }
+        if (strlen($direccion_entrega) < 5 || strlen($direccion_entrega) > 255) {
+            throw new Exception('La dirección de entrega debe tener entre 5 y 255 caracteres.', 400);
         }
 
         $sql = "UPDATE pedidos SET id_cliente = ?, fecha_cotizacion = ?, direccion_entrega = ? 
@@ -175,14 +212,13 @@ try {
         $stmt->execute([$id_cliente, $fecha_cotizacion, $direccion_entrega, $id_pedido, $ID_ESTADO_PENDIENTE]);
 
         if ($stmt->rowCount() === 0) {
-            throw new Exception('No se pudo actualizar el pedido. Es posible que ya no esté en estado "Pendiente" o no se encontraron cambios.', 404);
+            throw new Exception('No se pudo actualizar el pedido. Es posible que ya no esté en estado "Pendiente", no se encontraron cambios o el pedido no existe.', 404);
         }
         
         echo json_encode(['status' => 'success', 'message' => 'Pedido actualizado exitosamente.']);
 
     // --- MARCAR PEDIDO COMO ENTREGADO ---
     } elseif ($action === 'deliver' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-// ... (código de 'deliver' sin cambios) ...
         $id_pedido = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
         $ID_ESTADO_PENDIENTE = 1;
         $ID_ESTADO_EN_PREPARACION = 4;
@@ -229,7 +265,6 @@ try {
 
     // --- CANCELAR UN PEDIDO ---
     } elseif ($action === 'cancel' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-// ... (código de 'cancel' sin cambios) ...
         $id_pedido = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
         $ID_ESTADO_PENDIENTE = 1;
         $ID_ESTADO_EN_PREPARACION = 4;
@@ -270,7 +305,6 @@ try {
     }
 
 } catch (Exception $e) {
-// ... (código de catch sin cambios) ...
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }

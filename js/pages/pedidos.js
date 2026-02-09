@@ -24,6 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const addItemSection = document.getElementById('add-item-section');
     const viewModeStatus = document.getElementById('view-mode-status'); 
     const productoSelect = document.getElementById('producto_select');
+    const cantidadInput = document.getElementById('cantidad');
+    const precioInput = document.getElementById('precio');
     const addItemBtn = document.getElementById('add-item-btn');
     const detalleBody = document.getElementById('detalle-pedido-body');
     const totalPedidoEl = document.getElementById('total-pedido');
@@ -34,12 +36,30 @@ document.addEventListener('DOMContentLoaded', () => {
     let productosDisponibles = [];
     let detallePedido = []; // Array de objetos: { id, nombre, cantidad, precio }
 
-    const showModalError = (text) => {
-        if (typeof window.showMessage === 'function') {
-            window.showMessage(text, 'error', 'modal-message-container');
-        } else if (modalMessageContainer) {
-            modalMessageContainer.innerHTML = `<div class='my-4 p-4 text-sm text-red-800 bg-red-100 dark:bg-red-200 rounded-lg' role='alert'>${text}</div>`;
+    const showMessage = (text, type, containerId = 'message-container') => {
+        const container = document.getElementById(containerId);
+        if (container) {
+            let classes = '';
+            if (type === 'success') {
+                classes = 'text-green-800 bg-green-100 dark:bg-green-200 dark:text-green-800';
+            } else if (type === 'error') {
+                classes = 'text-red-800 bg-red-100 dark:bg-red-200 dark:text-red-800';
+            } else if (type === 'warning') {
+                classes = 'text-yellow-800 bg-yellow-100 dark:bg-yellow-200 dark:text-yellow-800';
+            }
+            container.innerHTML = `<div class="my-4 p-4 text-sm rounded-lg ${classes}" role="alert">${text}</div>`;
+            // Opcional: desaparecer después de unos segundos
+            // setTimeout(() => container.innerHTML = '', 5000);
         }
+    };
+    
+    // Asegúrate de que window.showMessage esté disponible globalmente si se usa externamente
+    if (!window.showMessage) {
+        window.showMessage = showMessage;
+    }
+
+    const showModalError = (text) => {
+        showMessage(text, 'error', 'modal-message-container');
     };
 
     const openModal = () => {
@@ -68,13 +88,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // Guardamos los productos (incluyendo 'stock' y 'precio')
             productosDisponibles = data.productos;
             if(productoSelect) {
                 productoSelect.innerHTML = '<option value="">Seleccione un producto</option>';
                 productosDisponibles.forEach(p => {
-                    // --- ¡MODIFICADO! ---
-                    // Ahora usamos 'nombre_descriptivo' que viene de la API
                     productoSelect.innerHTML += `<option value="${p.id_producto}">${p.nombre_descriptivo} (Stock: ${p.stock ?? 0})</option>`;
                 });
             }
@@ -84,17 +101,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- ¡MEJORA! Auto-rellenar precio al seleccionar producto ---
-    if (productoSelect) {
-// ... (código de auto-rellenar precio sin cambios) ...
+    // --- MEJORA! Auto-rellenar precio al seleccionar producto ---
+    if (productoSelect && precioInput) {
         productoSelect.addEventListener('change', () => {
             const idProducto = productoSelect.value;
             const producto = productosDisponibles.find(p => p.id_producto == idProducto);
-            const precioInput = document.getElementById('precio');
             
-            if (producto && precioInput) {
+            if (producto) {
                 precioInput.value = producto.precio || '';
-            } else if (precioInput) {
+                // Opcional: Mostrar stock actual del producto seleccionado en algún lugar si se desea
+            } else {
                 precioInput.value = '';
             }
         });
@@ -103,51 +119,74 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Lógica de "Agregar Item" ---
     if(addItemBtn) {
         addItemBtn.addEventListener('click', () => {
-// ... (código de validación sin cambios) ...
             modalMessageContainer.innerHTML = '';
             const idProducto = productoSelect.value;
-            const cantidad = parseInt(document.getElementById('cantidad').value);
-            const precio = parseFloat(document.getElementById('precio').value);
+            const cantidad = parseInt(cantidadInput.value);
+            const precio = parseFloat(precioInput.value);
 
-            if (!idProducto || !cantidad || !precio) {
-                showModalError('Por favor, complete todos los campos del producto.');
+            if (!idProducto) {
+                showModalError('Por favor, seleccione un producto.');
                 return;
             }
-            if (cantidad <= 0 || precio <= 0) {
-                showModalError('La cantidad y el precio deben ser mayores a cero.');
+            if (isNaN(cantidad) || cantidad <= 0) {
+                showModalError('La cantidad debe ser un número positivo.');
+                return;
+            }
+            if (isNaN(precio) || precio <= 0) {
+                showModalError('El precio unitario debe ser un número positivo.');
                 return;
             }
 
             const producto = productosDisponibles.find(p => p.id_producto == idProducto);
             if (!producto) {
-                showModalError('Producto no encontrado.');
+                showModalError('Producto no encontrado en la lista de disponibles.');
                 return;
             }
-            const stockActual = parseInt(producto.stock) || 0;
-            if (stockActual < cantidad) {
-                showModalError(`Stock insuficiente. Solo hay ${stockActual} unidades disponibles.`);
+            
+            // Calcular stock disponible considerando lo que ya está en el detalle del pedido
+            const cantidadYaEnPedido = detallePedido
+                .filter(item => item.id == idProducto)
+                .reduce((sum, item) => sum + item.cantidad, 0);
+
+            const stockActualParaVenta = (parseInt(producto.stock) || 0) - cantidadYaEnPedido;
+
+            if (stockActualParaVenta < cantidad) {
+                showModalError(`Stock insuficiente. Solo hay ${stockActualParaVenta} unidades disponibles para añadir (ya hay ${cantidadYaEnPedido} en este pedido).`);
                 return;
             }
-            if (detallePedido.some(item => item.id == idProducto)) {
-                showModalError('Este producto ya está en el pedido.');
-                return;
+            
+            const existingItemIndex = detallePedido.findIndex(item => item.id == idProducto);
+
+            if (existingItemIndex > -1) {
+                // Si el producto ya está, actualizar la cantidad y el precio si es diferente
+                detallePedido[existingItemIndex].cantidad += cantidad;
+                // Si queremos que el precio se actualice con el último precio ingresado:
+                detallePedido[existingItemIndex].precio = precio; 
+            } else {
+                detallePedido.push({ id: idProducto, nombre: producto.nombre_descriptivo, cantidad, precio });
+            }
+            
+            // Actualizar el stock del producto en productosDisponibles localmente para reflejar la reserva
+            const prodIndex = productosDisponibles.findIndex(p => p.id_producto == idProducto);
+            if (prodIndex > -1) {
+                productosDisponibles[prodIndex].stock -= cantidad; // Reducir el stock localmente
+                // Actualizar el texto del option en el select
+                const optionEl = productoSelect.querySelector(`option[value="${idProducto}"]`);
+                if (optionEl) {
+                    optionEl.textContent = `${producto.nombre_descriptivo} (Stock: ${productosDisponibles[prodIndex].stock})`;
+                }
             }
 
-            // --- ¡MODIFICADO! ---
-            // Usamos 'nombre_descriptivo' al agregar
-            detallePedido.push({ id: idProducto, nombre: producto.nombre_descriptivo, cantidad, precio });
             renderDetalle(true);
            
-// ... (código de limpiar inputs sin cambios) ...
             productoSelect.value = '';
-            document.getElementById('cantidad').value = '';
-            document.getElementById('precio').value = '';
+            cantidadInput.value = '';
+            precioInput.value = '';
         });
     }
 
     // --- Renderizar Tabla de Items ---
     function renderDetalle(isEditable = true) {
-// ... (código de renderDetalle sin cambios) ...
         if(!detalleBody) return;
         detalleBody.innerHTML = '';
         let total = 0;
@@ -166,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="px-4 py-2 text-center">$ ${item.precio.toFixed(2)}</td>
                     <td class="px-4 py-2 text-right font-bold">$ ${subtotal.toFixed(2)}</td>
                     <td class="px-4 py-2 text-center">
-                        ${isEditable ? `<button type="button" class="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 remove-item-btn" data-index="${index}"><i data-lucide="x-circle" class="w-5 h-5"></i></button>` : ''}
+                        ${isEditable ? `<button type="button" class="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 remove-item-btn" data-index="${index}" data-product-id="${item.id}" data-cantidad="${item.cantidad}"><i data-lucide="x-circle" class="w-5 h-5"></i></button>` : ''}
                     </td>
                 </tr>
             `;
@@ -177,20 +216,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Event listener para "Quitar Item" ---
     if(detalleBody) {
-// ... (código de quitar item sin cambios) ...
         detalleBody.addEventListener('click', (e) => {
             const removeBtn = e.target.closest('.remove-item-btn');
             if (removeBtn) {
                 const index = removeBtn.dataset.index;
+                const productId = removeBtn.dataset.productId;
+                const cantidadRestaurar = parseInt(removeBtn.dataset.cantidad);
+
                 detallePedido.splice(index, 1);
                 renderDetalle(true);
+
+                // Restaurar stock en productosDisponibles localmente
+                const prodIndex = productosDisponibles.findIndex(p => p.id_producto == productId);
+                if (prodIndex > -1) {
+                    productosDisponibles[prodIndex].stock += cantidadRestaurar;
+                    // Actualizar el texto del option en el select
+                    const optionEl = productoSelect.querySelector(`option[value="${productId}"]`);
+                    if (optionEl) {
+                        optionEl.textContent = `${productosDisponibles[prodIndex].nombre_descriptivo} (Stock: ${productosDisponibles[prodIndex].stock})`;
+                    }
+                }
             }
         });
     }
 
     // --- Abrir Modal para "CREAR" ---
     if(addOrderBtn) {
-// ... (código de 'crear' sin cambios) ...
         addOrderBtn.addEventListener('click', async () => {
             orderForm.reset();
             modalTitle.textContent = 'Crear Nuevo Pedido';
@@ -256,8 +307,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.message || 'Error al cargar detalles');
                 
-                // Esta parte ya funciona con la API actualizada,
-                // porque la API devuelve el nombre descriptivo en el alias 'nombre_producto'
                 detallePedido = data.details.map(item => ({
                     id: item.id_producto,
                     nombre: item.nombre_producto,
@@ -278,7 +327,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Enviar Formulario (SOLO CREAR) ---
     if(orderForm) {
-// ... (código de submit sin cambios) ...
         orderForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -295,6 +343,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 showModalError('Debe seleccionar una fecha.');
                 return;
             }
+            // Validar que la fecha no sea futura
+            const today = new Date().toISOString().split('T')[0];
+            if (fechaInput.value > today) {
+                showModalError('La fecha de cotización no puede ser futura.');
+                return;
+            }
+
+            // Validar direccion de entrega
+            if (!direccionInput.value.trim()) {
+                showModalError('La dirección de entrega es obligatoria.');
+                return;
+            }
+            if (direccionInput.value.trim().length < 5 || direccionInput.value.trim().length > 255) {
+                showModalError('La dirección de entrega debe tener entre 5 y 255 caracteres.');
+                return;
+            }
+
             if (detallePedido.length === 0) {
                 showModalError('Debe agregar al menos un producto al pedido.');
                 return;
@@ -317,9 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!response.ok) throw new Error(result.message || `Error ${response.status}`);
 
                 closeModal();
-                if (typeof window.showMessage === 'function') {
-                    window.showMessage(result.message, 'success', 'message-container');
-                }
+                showMessage(result.message, 'success', 'message-container');
                 setTimeout(() => location.reload(), 1500);
             } catch (error) {
                 showModalError(error.message);
@@ -362,14 +425,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             if (!response.ok) throw new Error(result.message || `Error ${response.status}`);
 
-            if (typeof window.showMessage === 'function') {
-                window.showMessage(result.message, 'success', 'message-container');
-            }
+            showMessage(result.message, 'success', 'message-container');
             setTimeout(() => location.reload(), 1500);
         } catch (error) {
-            if (typeof window.showMessage === 'function') {
-                window.showMessage(error.message, 'error', 'message-container');
-            }
+            showMessage(error.message, 'error', 'message-container');
             button.disabled = false;
         }
     };

@@ -209,7 +209,7 @@ $stmt->execute($params);
                 </div>
                 <div class="md:col-span-2">
                     <label for="direccion_entrega" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección de Entrega</LAbel>
-                    <input type="text" id="direccion_entrega" name="direccion_entrega" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <input type="text" id="direccion_entrega" name="direccion_entrega" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" disabled>
                 </div>
             </div>
 
