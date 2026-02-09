@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('order-modal');
     if (!modal) return;
-   
+
     const runLucide = () => {
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
@@ -14,15 +14,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const orderForm = document.getElementById('order-form');
     const modalTitle = document.getElementById('modal-title');
     const submitBtn = document.getElementById('submit-btn');
-    
+
     const formAction = document.getElementById('form-action');
     const formOrderId = document.getElementById('form-order-id');
     const clienteSelect = document.getElementById('id_cliente');
     const fechaInput = document.getElementById('fecha_cotizacion');
     const direccionInput = document.getElementById('direccion_entrega');
-    
+
     const addItemSection = document.getElementById('add-item-section');
-    const viewModeStatus = document.getElementById('view-mode-status'); 
+    const viewModeStatus = document.getElementById('view-mode-status');
     const productoSelect = document.getElementById('producto_select');
     const cantidadInput = document.getElementById('cantidad');
     const precioInput = document.getElementById('precio');
@@ -30,10 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const detalleBody = document.getElementById('detalle-pedido-body');
     const totalPedidoEl = document.getElementById('total-pedido');
     const detallePedidoJsonInput = document.getElementById('detalle_pedido_json');
-    
+
     const modalMessageContainer = document.getElementById('modal-message-container');
 
     let productosDisponibles = [];
+    let clientesDisponibles = [];
     let detallePedido = []; // Array de objetos: { id, nombre, cantidad, precio }
 
     const showMessage = (text, type, containerId = 'message-container') => {
@@ -52,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // setTimeout(() => container.innerHTML = '', 5000);
         }
     };
-    
+
     // Asegúrate de que window.showMessage esté disponible globalmente si se usa externamente
     if (!window.showMessage) {
         window.showMessage = showMessage;
@@ -71,8 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modalMessageContainer) modalMessageContainer.innerHTML = '';
     };
 
-    if(closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
-    if(cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
     // --- Cargar Datos (Clientes y Productos) ---
     async function fetchFormData() {
@@ -80,16 +81,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('api/pedidos_actions.php?action=get_form_data');
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || 'Error al cargar datos');
+            // Guardamos los clientes localmente para acceder a sus direcciones
+            clientesDisponibles = data.clientes;
 
             if (clienteSelect) {
                 clienteSelect.innerHTML = '<option value="">Seleccione un cliente</option>';
-                data.clientes.forEach(c => {
+                clientesDisponibles.forEach(c => {
                     clienteSelect.innerHTML += `<option value="${c.id_cliente}">${c.nombre_razon_social}</option>`;
                 });
             }
 
             productosDisponibles = data.productos;
-            if(productoSelect) {
+            if (productoSelect) {
                 productoSelect.innerHTML = '<option value="">Seleccione un producto</option>';
                 productosDisponibles.forEach(p => {
                     productoSelect.innerHTML += `<option value="${p.id_producto}">${p.nombre_descriptivo} (Stock: ${p.stock ?? 0})</option>`;
@@ -101,12 +104,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 2. Lógica de auto-relleno y validación de ubicación
+    if (clienteSelect && direccionInput) {
+        clienteSelect.addEventListener('change', () => {
+            const idCliente = clienteSelect.value;
+            const cliente = clientesDisponibles.find(c => c.id_cliente == idCliente);
+
+            if (cliente) {
+                // Rellenamos el campo. Si no tiene dirección, enviamos un aviso
+                if (cliente.ubicacion && cliente.ubicacion.trim() !== "") {
+                    direccionInput.value = cliente.ubicacion;
+                    direccionInput.classList.remove('border-red-500'); // Limpiar errores previos
+                } else {
+                    direccionInput.value = "";
+                    showModalError('Este cliente no tiene una dirección registrada. Por favor, ingrésela manualmente.');
+                    direccionInput.classList.add('border-red-500');
+                }
+            } else {
+                direccionInput.value = '';
+            }
+        });
+    }
     // --- MEJORA! Auto-rellenar precio al seleccionar producto ---
     if (productoSelect && precioInput) {
         productoSelect.addEventListener('change', () => {
             const idProducto = productoSelect.value;
             const producto = productosDisponibles.find(p => p.id_producto == idProducto);
-            
+
             if (producto) {
                 precioInput.value = producto.precio || '';
                 // Opcional: Mostrar stock actual del producto seleccionado en algún lugar si se desea
@@ -117,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Lógica de "Agregar Item" ---
-    if(addItemBtn) {
+    if (addItemBtn) {
         addItemBtn.addEventListener('click', () => {
             modalMessageContainer.innerHTML = '';
             const idProducto = productoSelect.value;
@@ -142,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showModalError('Producto no encontrado en la lista de disponibles.');
                 return;
             }
-            
+
             // Calcular stock disponible considerando lo que ya está en el detalle del pedido
             const cantidadYaEnPedido = detallePedido
                 .filter(item => item.id == idProducto)
@@ -154,18 +178,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 showModalError(`Stock insuficiente. Solo hay ${stockActualParaVenta} unidades disponibles para añadir (ya hay ${cantidadYaEnPedido} en este pedido).`);
                 return;
             }
-            
+
             const existingItemIndex = detallePedido.findIndex(item => item.id == idProducto);
 
             if (existingItemIndex > -1) {
                 // Si el producto ya está, actualizar la cantidad y el precio si es diferente
                 detallePedido[existingItemIndex].cantidad += cantidad;
                 // Si queremos que el precio se actualice con el último precio ingresado:
-                detallePedido[existingItemIndex].precio = precio; 
+                detallePedido[existingItemIndex].precio = precio;
             } else {
                 detallePedido.push({ id: idProducto, nombre: producto.nombre_descriptivo, cantidad, precio });
             }
-            
+
             // Actualizar el stock del producto en productosDisponibles localmente para reflejar la reserva
             const prodIndex = productosDisponibles.findIndex(p => p.id_producto == idProducto);
             if (prodIndex > -1) {
@@ -178,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             renderDetalle(true);
-           
+
             productoSelect.value = '';
             cantidadInput.value = '';
             precioInput.value = '';
@@ -187,12 +211,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Renderizar Tabla de Items ---
     function renderDetalle(isEditable = true) {
-        if(!detalleBody) return;
+        if (!detalleBody) return;
         detalleBody.innerHTML = '';
         let total = 0;
-        
-        if(detallePedido.length === 0) {
-             detalleBody.innerHTML = '<tr><td colspan="5" class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">Aún no hay productos en el pedido.</td></tr>';
+
+        if (detallePedido.length === 0) {
+            detalleBody.innerHTML = '<tr><td colspan="5" class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">Aún no hay productos en el pedido.</td></tr>';
         }
 
         detallePedido.forEach((item, index) => {
@@ -210,12 +234,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tr>
             `;
         });
-        if(totalPedidoEl) totalPedidoEl.textContent = `$ ${total.toFixed(2)}`;
+        if (totalPedidoEl) totalPedidoEl.textContent = `$ ${total.toFixed(2)}`;
         runLucide();
-    }   
+    }
 
     // --- Event listener para "Quitar Item" ---
-    if(detalleBody) {
+    if (detalleBody) {
         detalleBody.addEventListener('click', (e) => {
             const removeBtn = e.target.closest('.remove-item-btn');
             if (removeBtn) {
@@ -241,28 +265,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Abrir Modal para "CREAR" ---
-    if(addOrderBtn) {
+    if (addOrderBtn) {
         addOrderBtn.addEventListener('click', async () => {
             orderForm.reset();
             modalTitle.textContent = 'Crear Nuevo Pedido';
             submitBtn.textContent = 'Crear Pedido';
             formAction.value = 'create';
             formOrderId.value = '';
-            
+
             detallePedido = [];
             renderDetalle(true);
-            
+
             addItemSection.classList.remove('hidden');
             viewModeStatus.classList.add('hidden');
             submitBtn.classList.remove('hidden');
             cancelBtn.classList.remove('hidden');
-            
+
             clienteSelect.disabled = false;
             fechaInput.disabled = false;
             direccionInput.disabled = false;
 
             fechaInput.valueAsDate = new Date();
-            
+
             await fetchFormData();
             openModal();
         });
@@ -272,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.view-order-btn').forEach(button => {
         button.addEventListener('click', async () => {
             const id = button.dataset.id;
-            
+
             orderForm.reset();
             modalTitle.textContent = 'Ver Detalle Pedido #' + id;
             formAction.value = 'view';
@@ -306,16 +330,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(`api/pedidos_actions.php?action=get_order_details&id=${id}`);
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.message || 'Error al cargar detalles');
-                
+
                 detallePedido = data.details.map(item => ({
                     id: item.id_producto,
                     nombre: item.nombre_producto,
                     cantidad: parseInt(item.cantidad_pedido),
                     precio: parseFloat(item.precio_unitario)
                 }));
-                
+
                 renderDetalle(false); // Renderizar SIN botones de eliminar
-                
+
             } catch (error) {
                 showModalError(`No se pudieron cargar los detalles del pedido: ${error.message}`);
             }
@@ -326,15 +350,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- Enviar Formulario (SOLO CREAR) ---
-    if(orderForm) {
+    if (orderForm) {
         orderForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const action = formAction.value;
-            if (action !== 'create') return; 
+            if (action !== 'create') return;
 
             modalMessageContainer.innerHTML = '';
-            
+
             if (!clienteSelect.value) {
                 showModalError('Debe seleccionar un cliente.');
                 return;
@@ -364,12 +388,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 showModalError('Debe agregar al menos un producto al pedido.');
                 return;
             }
-            
+
             submitBtn.disabled = true;
             submitBtn.textContent = 'Guardando...';
-            
+
             detallePedidoJsonInput.value = JSON.stringify(detallePedido);
-            
+
             const formData = new FormData(orderForm);
 
             try {
@@ -392,7 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     // --- Formularios de Acción (Entregar / Cancelar) ---
     const handleActionForm = async (e) => {
         e.preventDefault();
@@ -401,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const confirmText = action === 'deliver'
             ? '¿Confirmar que este pedido ha sido entregado? Esta acción creará un registro de venta.'
             : '¿Estás seguro de que quieres cancelar este pedido? Esta acción repondrá el stock.';
-        
+
         let confirmed = false;
         if (typeof window.showConfirmationModal === 'function') {
             const title = action === 'deliver' ? 'Confirmar Entrega' : 'Confirmar Cancelación';
@@ -436,7 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.deliver-form').forEach(form => {
         form.addEventListener('submit', handleActionForm);
     });
-    
+
     document.querySelectorAll('.cancel-form').forEach(form => {
         form.addEventListener('submit', handleActionForm);
     });

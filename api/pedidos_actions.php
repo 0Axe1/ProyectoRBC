@@ -40,7 +40,7 @@ try {
     if ($action === 'get_form_data' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         $response = ['clientes' => [], 'productos' => []];
         
-        $clientes_sql = "SELECT id_cliente, nombre_razon_social FROM clientes WHERE estado = 1 ORDER BY nombre_razon_social ASC";
+        $clientes_sql = "SELECT id_cliente, nombre_razon_social, ubicacion FROM clientes WHERE estado = 1 ORDER BY nombre_razon_social ASC";
         $response['clientes'] = $pdo->query($clientes_sql)->fetchAll(PDO::FETCH_ASSOC);
 
         $productos_sql = "SELECT 
