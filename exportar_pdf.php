@@ -141,10 +141,7 @@ class PDF extends FPDF
         $this->SetFont('Arial','',10);
         $this->Cell(0, 5, 'Generado el: ' . date('d/m/Y H:i:s'), 0, 1, 'C');
         
-        // --- ¡CORREGIDO! ---
-        // Se cambió Ln(5) por $this->Ln(5)
         $this->Ln(5);
-        // --- FIN DE LA CORRECCIÓN ---
     }
 
     // Pie de página
@@ -158,14 +155,6 @@ class PDF extends FPDF
     // Tabla de datos
     function GenerarTabla($header, $data, $anchos)
     {
-        // --- ¡CORREGIDO! ---
-        // Se cambiaron todas las llamadas de $this. a $this->
-        $this->SetFillColor(230, 230, 230);
-        $this->SetTextColor(0);
-        $this->SetDrawColor(128, 128, 128);
-        $this->SetLineWidth(.3);
-        $this->SetFont('','B');
-
         // Cabecera
         for($i=0; $i<count($header); $i++)
             $this->Cell($anchos[$i], 7, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $header[$i]), 1, 0, 'C', true);
@@ -175,14 +164,11 @@ class PDF extends FPDF
         $this->SetFillColor(255);
         $this->SetTextColor(0);
         $this->SetFont('');
-        // --- FIN DE LA CORRECCIÓN ---
 
         // Datos
         $fill = false;
         if (empty($data)) {
-            // --- ¡CORREGIDO! ---
             $this->Cell(array_sum($anchos), 10, 'No se encontraron datos.', 'LRB', 1, 'C', $fill);
-            // --- FIN DE LA CORRECCIÓN ---
             return;
         }
 
@@ -223,20 +209,14 @@ class PDF extends FPDF
             }
 
             foreach($rowData as $col) {
-                // --- ¡CORREGIDO! ---
                 $this->Cell($anchos[$i], 6, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $col), 'LR', 0, 'L', $fill);
-                // --- FIN DE LA CORRECCIÓN ---
                 $i++;
             }
-            // --- ¡CORREGIDO! ---
             $this->Ln();
-            // --- FIN DE LA CORRECCIÓN ---
             $fill = !$fill;
         }
         // Línea de cierre
-        // --- ¡CORREGIDO! ---
         $this->Cell(array_sum($anchos), 0, '', 'T');
-        // --- FIN DE LA CORRECCIÓN ---
     }
 }
 
