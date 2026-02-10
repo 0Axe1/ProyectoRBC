@@ -26,6 +26,38 @@ if (isset($_GET['error'])) {
 }
 
 
+
+// --- 1. Configuración de Paginación y Búsqueda ---
+$limit = 10; // Registros por página
+$current_page = isset($_GET['p']) && is_numeric($_GET['p']) ? (int)$_GET['p'] : 1;
+if ($current_page < 1) $current_page = 1;
+$offset = ($current_page - 1) * $limit;
+
+$search_term = trim($_GET['search'] ?? '');
+$params = [];
+
+// --- 2. Consulta para obtener el total de registros (Paginación) ---
+$sql_count = "SELECT COUNT(*) 
+              FROM productos p
+              JOIN categorias_producto c ON p.id_categoria = c.id_categoria
+              WHERE p.activo = 1";
+
+if (!empty($search_term)) {
+    $sql_count .= " AND (p.nombre_producto LIKE ? OR c.nombre_categoria LIKE ?)";
+    $count_params = ['%' . $search_term . '%', '%' . $search_term . '%'];
+} else {
+    $count_params = [];
+}
+
+$stmt_count = $pdo->prepare($sql_count);
+$stmt_count->execute($count_params);
+$total_records = $stmt_count->fetchColumn();
+$total_pages = ceil($total_records / $limit);
+
+// Ajuste de seguridad
+if ($current_page > $total_pages && $total_pages > 0) $current_page = $total_pages;
+
+// --- 3. Consulta Principal con LIMIT y OFFSET ---
 $sql = "SELECT
             p.id_producto,
             p.nombre_producto,
@@ -45,10 +77,30 @@ $sql = "SELECT
         FROM productos p
         JOIN categorias_producto c ON p.id_categoria = c.id_categoria
         LEFT JOIN detalle_producto dp ON p.id_producto = dp.id_producto
-        WHERE p.activo = 1
-        ORDER BY p.nombre_producto ASC";
+        WHERE p.activo = 1";
 
-$stmt_inventario = $pdo->query($sql);
+if (!empty($search_term)) {
+    $sql .= " AND (p.nombre_producto LIKE ? OR c.nombre_categoria LIKE ?)";
+    $search_like = '%' . $search_term . '%';
+    $params[] = $search_like;
+    $params[] = $search_like;
+}
+
+$sql .= " ORDER BY p.nombre_producto ASC LIMIT $limit OFFSET $offset";
+
+$stmt_inventario = $pdo->prepare($sql);
+$stmt_inventario->execute($params);
+
+// Función auxiliar para mantener parámetros de búsqueda en los links de paginación
+function pagination_url($page_num, $search) {
+    // Nota: 'index.php?page=inventario' es la base, ajusta si tu router es diferente
+    $url = "?page=inventario&p=" . $page_num;
+    if (!empty($search)) {
+        $url .= "&search=" . urlencode($search);
+    }
+    return $url;
+}
+
 
 $stmt_categorias = $pdo->query("SELECT id_categoria, nombre_categoria FROM categorias_producto ORDER BY nombre_categoria");
 $categorias = $stmt_categorias->fetchAll(PDO::FETCH_ASSOC);
@@ -65,6 +117,32 @@ $categorias = $stmt_categorias->fetchAll(PDO::FETCH_ASSOC);
             Registrar Nuevo Producto
         </button>
     </div>
+
+    <!-- Buscador -->
+    <div class="mb-4">
+        <form action="index.php" method="GET" class="flex flex-wrap items-center gap-2">
+            <input type="hidden" name="page" value="inventario">
+            <div class="relative flex-grow w-full sm:w-auto">
+                <label for="search" class="sr-only">Buscar producto</label>
+                <input type="text" id="search" name="search"
+                       class="w-full px-4 py-2 pl-10 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                       placeholder="Buscar por Nombre o Categoría..."
+                       value="<?php echo e($search_term); ?>">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                </span>
+            </div>
+            <button type="submit" class="w-full sm:w-auto px-4 py-2 flex items-center justify-center bg-green-600 text-white rounded-lg hover:bg-green-700 transition-transform duration-300 hover:scale-105">
+                Buscar
+            </button>
+            <?php if (!empty($search_term)): ?>
+                <a href="index.php?page=inventario" class="w-full sm:w-auto px-4 py-2 text-sm text-center text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500">
+                    Limpiar
+                </a>
+            <?php endif; ?>
+        </form>
+    </div>
+
     <div class="overflow-x-auto">
         <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
             <thead class="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700">
@@ -142,6 +220,44 @@ $categorias = $stmt_categorias->fetchAll(PDO::FETCH_ASSOC);
                 <?php endif; ?>
             </tbody>
         </table>
+    </div>
+
+    <!-- Paginación -->
+    <div class="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+            Mostrando <span class="font-semibold text-gray-800 dark:text-white"><?php echo $total_records > 0 ? $offset + 1 : 0; ?></span> 
+            a <span class="font-semibold text-gray-800 dark:text-white"><?php echo min($total_records, $offset + $limit); ?></span> 
+            de <span class="font-semibold text-gray-800 dark:text-white"><?php echo $total_records; ?></span> registros
+        </div>
+
+        <nav class="inline-flex -space-x-px rounded-md shadow-sm" aria-label="Paginación">
+            <!-- Botón Anterior -->
+            <?php if ($current_page > 1): ?>
+                <a href="<?php echo pagination_url($current_page - 1, $search_term); ?>" class="relative inline-flex items-center rounded-l-md px-3 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </a>
+            <?php else: ?>
+                <span class="relative inline-flex items-center rounded-l-md px-3 py-2 text-gray-300 dark:text-gray-600 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 cursor-not-allowed">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </span>
+            <?php endif; ?>
+
+            <!-- Info Página -->
+            <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 bg-gray-50 dark:bg-gray-800">
+                Página <?php echo $current_page; ?> de <?php echo max(1, $total_pages); ?>
+            </span>
+
+            <!-- Botón Siguiente -->
+            <?php if ($current_page < $total_pages): ?>
+                <a href="<?php echo pagination_url($current_page + 1, $search_term); ?>" class="relative inline-flex items-center rounded-r-md px-3 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                </a>
+            <?php else: ?>
+                <span class="relative inline-flex items-center rounded-r-md px-3 py-2 text-gray-300 dark:text-gray-600 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 cursor-not-allowed">
+                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                </span>
+            <?php endif; ?>
+        </nav>
     </div>
 </div>
 
