@@ -147,36 +147,36 @@ $tipos_contacto = $stmt_tipos->fetchAll(PDO::FETCH_ASSOC);
 
     <div class="overflow-x-auto">
         <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-            <thead class="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700">
+            <thead class="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b dark:border-gray-600">
                 <tr>
-                    <th scope="col" class="px-6 py-3">Nombre / Razón Social</th>
-                    <th scope="col" class="px-6 py-3">NIT / RUC</th>
-                    <th scope="col" class="px-6 py-3">
+                    <th scope="col" class="px-6 py-4 font-semibold">Nombre / Razón Social</th>
+                    <th scope="col" class="px-6 py-4 font-semibold">NIT / RUC</th>
+                    <th scope="col" class="px-6 py-4 font-semibold">
                         <!-- ¡NUEVO! Icono de diseño -->
                         <i data-lucide="phone" class="w-4 h-4 inline-block mr-1 opacity-70"></i>
                         Teléfono
                     </th>
-                    <th scope="col" class="px-6 py-3">
+                    <th scope="col" class="px-6 py-4 font-semibold">
                         <!-- ¡NUEVO! Icono de diseño -->
                         <i data-lucide="mail" class="w-4 h-4 inline-block mr-1 opacity-70"></i>
                         Email
                     </th>
-                    <th scope="col" class="px-6 py-3">
+                    <th scope="col" class="px-6 py-4 font-semibold">
                         <!-- ¡NUEVO! Icono de diseño -->
                         <i data-lucide="map-pin" class="w-4 h-4 inline-block mr-1 opacity-70"></i>
                         Ubicación
                     </th>
                     <!-- ¡NUEVO! Columnas de fecha -->
-                    <th scope="col" class="px-6 py-3">
+                    <th scope="col" class="px-6 py-4 font-semibold">
                         <i data-lucide="calendar-plus" class="w-4 h-4 inline-block mr-1 opacity-70"></i>
                         Creado
                     </th>
-                    <th scope="col" class="px-6 py-3">
+                    <th scope="col" class="px-6 py-4 font-semibold">
                         <i data-lucide="calendar-clock" class="w-4 h-4 inline-block mr-1 opacity-70"></i>
                         Actualizado
                     </th>
                     <!-- Fin de lo nuevo -->
-                    <th scope="col" class="px-6 py-3 text-right">Acciones</th>
+                    <th scope="col" class="px-6 py-4 text-right font-semibold">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -227,12 +227,24 @@ $tipos_contacto = $stmt_tipos->fetchAll(PDO::FETCH_ASSOC);
                     <!-- ¡NUEVO! Colspan actualizado de 5 a 8 -->
                     <!-- ¡NUEVO! Mensaje dinámico si no hay resultados de búsqueda -->
                     <tr class="bg-white dark:bg-gray-800">
-                        <td colspan="8" class="px-6 py-4 text-center">
-                            <?php if (!empty($search_term)): ?>
-                                No se encontraron clientes que coincidan con "<?php echo e($search_term); ?>".
-                            <?php else: ?>
-                                No hay clientes registrados.
-                            <?php endif; ?>
+                        <td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <div class="flex flex-col items-center justify-center space-y-3">
+                                <div class="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
+                                    <i data-lucide="users" class="w-8 h-8 text-gray-400 dark:text-gray-500"></i>
+                                </div>
+                                
+                                <?php if (!empty($search_term)): ?>
+                                    <p class="text-lg font-medium text-gray-900 dark:text-gray-100">Sin resultados</p>
+                                    <p class="text-sm">No se encontraron clientes que coincidan con "<strong><?php echo e($search_term); ?></strong>".</p>
+                                    <a href="index.php?page=clientes" class="mt-2 text-green-600 hover:text-green-700 font-medium text-sm">Limpiar búsqueda</a>
+                                <?php else: ?>
+                                    <p class="text-lg font-medium text-gray-900 dark:text-gray-100">No hay clientes</p>
+                                    <p class="text-sm">Aún no se han registrado clientes en el sistema.</p>
+                                    <button class="mt-2 text-green-600 hover:text-green-700 font-medium text-sm" onclick="document.getElementById('add-client-btn').click()">
+                                        Agregar el primer cliente
+                                    </button>
+                                <?php endif; ?>
+                            </div>
                         </td>
                     </tr>
                 <?php endif; ?>

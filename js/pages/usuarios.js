@@ -2,21 +2,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('user-modal');
     if (!modal) return;
 
+    const runLucide = () => {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    };
+
     const addUserBtn = document.getElementById('add-user-btn');
+    const closeModalBtn = document.getElementById('close-modal-btn');
     const cancelBtn = document.getElementById('cancel-btn');
     const form = document.getElementById('user-form');
     const modalTitle = document.getElementById('modal-title');
     const formAction = document.getElementById('form-action');
     const submitBtn = document.getElementById('submit-btn');
     const passwordHelp = document.getElementById('password-help');
+    const passwordRequiredMark = document.getElementById('password-required-mark');
 
-    const openModal = () => modal.classList.remove('hidden');
+    // --- Constantes de validación (deben coincidir con el backend) ---
+    const MIN_USERNAME_LENGTH = 3;
+    const MAX_USERNAME_LENGTH = 50;
+    const MIN_PASSWORD_LENGTH = 6;
+
+    const openModal = () => {
+        modal.classList.remove('hidden');
+        runLucide();
+    };
     const closeModal = () => {
         modal.classList.add('hidden');
         const modalMsg = document.getElementById('modal-message-container');
         if (modalMsg) modalMsg.innerHTML = '';
     };
 
+    const showModalError = (text) => {
+        if (typeof window.showMessage === 'function') {
+            window.showMessage(text, 'error', 'modal-message-container');
+        }
+    };
+
+    // --- Abrir Modal para CREAR ---
     if (addUserBtn) {
         addUserBtn.addEventListener('click', () => {
             form.reset();
@@ -24,11 +47,13 @@ document.addEventListener('DOMContentLoaded', () => {
             formAction.value = 'create';
             submitBtn.textContent = 'Crear Usuario';
             passwordHelp.classList.add('hidden');
+            if (passwordRequiredMark) passwordRequiredMark.classList.remove('hidden');
             document.getElementById('contrasena').required = true;
             openModal();
         });
     }
 
+    // --- Abrir Modal para EDITAR ---
     document.querySelectorAll('.edit-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             form.reset();
@@ -39,11 +64,14 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('nombre_usuario').value = btn.dataset.nombre;
             document.getElementById('id_rol').value = btn.dataset.idRol;
             passwordHelp.classList.remove('hidden');
+            if (passwordRequiredMark) passwordRequiredMark.classList.add('hidden');
             document.getElementById('contrasena').required = false;
             openModal();
         });
     });
 
+    // --- Cerrar Modal ---
+    if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
     if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
@@ -55,25 +83,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const modalMsg = document.getElementById('modal-message-container');
             if (modalMsg) modalMsg.innerHTML = '';
 
+            // --- Validaciones del lado del cliente ---
             const nombre = document.getElementById('nombre_usuario').value.trim();
             const idRol = document.getElementById('id_rol').value;
             const contrasena = document.getElementById('contrasena').value;
 
             if (!nombre || !idRol) {
-                if (typeof window.showMessage === 'function') {
-                    window.showMessage('Todos los campos marcados con * son requeridos.', 'error', 'modal-message-container');
-                }
+                showModalError('Todos los campos marcados con * son requeridos.');
+                return;
+            }
+            if (nombre.length < MIN_USERNAME_LENGTH || nombre.length > MAX_USERNAME_LENGTH) {
+                showModalError(`El nombre de usuario debe tener entre ${MIN_USERNAME_LENGTH} y ${MAX_USERNAME_LENGTH} caracteres.`);
                 return;
             }
             if (action === 'create' && !contrasena) {
-                if (typeof window.showMessage === 'function') {
-                    window.showMessage('La contraseña es obligatoria para crear un usuario.', 'error', 'modal-message-container');
-                }
+                showModalError('La contraseña es obligatoria para crear un usuario.');
+                return;
+            }
+            if (contrasena && contrasena.length < MIN_PASSWORD_LENGTH) {
+                showModalError(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`);
                 return;
             }
 
-            const submitText = action === 'create' ? 'Crear Usuario' : 'Actualizar Usuario';
+            // --- Prevención de doble click ---
+            if (submitBtn.disabled) return;
             submitBtn.disabled = true;
+            const originalBtnText = submitBtn.textContent;
             submitBtn.textContent = 'Guardando...';
 
             const formData = new FormData(form);
@@ -92,12 +127,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 setTimeout(() => location.reload(), 1500);
             } catch (error) {
-                if (typeof window.showMessage === 'function') {
-                    window.showMessage(error.message, 'error', 'modal-message-container');
-                }
-            } finally {
+                showModalError(error.message);
+                // Solo rehabilitar en error
                 submitBtn.disabled = false;
-                submitBtn.textContent = submitText;
+                submitBtn.textContent = originalBtnText;
             }
         });
     }
@@ -107,8 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
         formEl.addEventListener('submit', async (e) => {
             e.preventDefault();
             const confirmed = typeof window.showConfirmationModal === 'function'
-                ? await window.showConfirmationModal('Eliminar Usuario', '¿Estás seguro de que quieres eliminar a este usuario?')
-                : confirm('¿Estás seguro de que quieres eliminar a este usuario?');
+                ? await window.showConfirmationModal('Deshabilitar Usuario', '¿Estás seguro de que quieres deshabilitar a este usuario?')
+                : confirm('¿Estás seguro de que quieres deshabilitar a este usuario?');
 
             if (!confirmed) return;
 

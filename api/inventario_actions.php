@@ -4,6 +4,11 @@ header('Content-Type: application/json');
 
 require_once __DIR__ . '/../config/db_connection.php';
 
+// --- Constantes ---
+const LOW_STOCK_THRESHOLD = 50;
+const MAX_NOMBRE_LENGTH = 255;
+const MAX_DESCRIPCION_LENGTH = 1000;
+
 $pdo = null;
 try {
     $pdo = conectarDB();
@@ -43,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $action = $_POST['action'] ?? '';
 $id_producto = filter_var($_POST['id_producto'] ?? $_POST['id'] ?? null, FILTER_VALIDATE_INT);
-$id_categoria = filter_var($_POST['id_categoria'] ?? null, FILTER_VALIDATE_INT);
+
 $nombre_producto = trim($_POST['nombre_producto'] ?? '');
 $stock = filter_var($_POST['stock'] ?? null, FILTER_VALIDATE_INT, ["options" => ["min_range" => 0]]);
 $precio = filter_var($_POST['precio'] ?? null, FILTER_VALIDATE_FLOAT, ["options" => ["min_range" => 0.01]]);
@@ -56,8 +61,17 @@ if ($peso_neto === false || $peso_neto === '') $peso_neto = null;
 
 try {
     if ($action === 'create') {
-        if (empty($nombre_producto) || empty($id_categoria) || $stock === false || $precio === false) {
-            throw new Exception('Error. Faltan datos obligatorios o los valores son incorrectos (Nombre, Categoría, Stock >= 0, Precio >= 0.01).');
+        if (empty($nombre_producto) || $stock === false || $precio === false) {
+            throw new Exception('Error. Faltan datos obligatorios o los valores son incorrectos (Nombre, Stock >= 0, Precio >= 0.01).');
+        }
+        if (mb_strlen($nombre_producto) > MAX_NOMBRE_LENGTH) {
+            throw new Exception('El nombre del producto no puede exceder ' . MAX_NOMBRE_LENGTH . ' caracteres.');
+        }
+        if ($descripcion !== null && mb_strlen($descripcion) > MAX_DESCRIPCION_LENGTH) {
+            throw new Exception('La descripción no puede exceder ' . MAX_DESCRIPCION_LENGTH . ' caracteres.');
+        }
+        if ($link_documentos !== null && !filter_var($link_documentos, FILTER_VALIDATE_URL)) {
+            throw new Exception('El link de documentos debe ser una URL válida (ej: https://...).');
         }
 
         $pdo->beginTransaction();
@@ -70,9 +84,10 @@ try {
             throw new Exception("Ya existe un producto registrado con el nombre '$nombre_producto'.");
         }
 
-        $sql_prod = "INSERT INTO productos (id_categoria, nombre_producto, precio, stock) VALUES (?, ?, ?, ?)";
+
+        $sql_prod = "INSERT INTO productos (nombre_producto, precio, stock) VALUES (?, ?, ?)";
         $stmt_prod = $pdo->prepare($sql_prod);
-        $stmt_prod->execute([$id_categoria, $nombre_producto, $precio, $stock]);
+        $stmt_prod->execute([$nombre_producto, $precio, $stock]);
         $new_id_producto = $pdo->lastInsertId();
 
         $sql_det = "INSERT INTO detalle_producto 
@@ -87,8 +102,17 @@ try {
         echo json_encode(['status' => 'success', 'message' => 'Producto y detalles registrados exitosamente.']);
 
     } elseif ($action === 'update' && $id_producto) {
-        if (empty($nombre_producto) || empty($id_categoria) || $precio === false || $stock === false) {
-            throw new Exception('Error. Faltan datos obligatorios o los valores son incorrectos (Nombre, Categoría, Stock >= 0, Precio >= 0.01).');
+        if (empty($nombre_producto) || $precio === false || $stock === false) {
+            throw new Exception('Error. Faltan datos obligatorios o los valores son incorrectos (Nombre, Stock >= 0, Precio >= 0.01).');
+        }
+        if (mb_strlen($nombre_producto) > MAX_NOMBRE_LENGTH) {
+            throw new Exception('El nombre del producto no puede exceder ' . MAX_NOMBRE_LENGTH . ' caracteres.');
+        }
+        if ($descripcion !== null && mb_strlen($descripcion) > MAX_DESCRIPCION_LENGTH) {
+            throw new Exception('La descripción no puede exceder ' . MAX_DESCRIPCION_LENGTH . ' caracteres.');
+        }
+        if ($link_documentos !== null && !filter_var($link_documentos, FILTER_VALIDATE_URL)) {
+            throw new Exception('El link de documentos debe ser una URL válida (ej: https://...).');
         }
 
         $pdo->beginTransaction();
@@ -101,9 +125,10 @@ try {
             throw new Exception("Ya existe otro producto registrado con el nombre '$nombre_producto'.");
         }
 
-        $sql_prod = "UPDATE productos SET id_categoria = ?, nombre_producto = ?, precio = ?, stock = ? WHERE id_producto = ?";
+
+        $sql_prod = "UPDATE productos SET nombre_producto = ?, precio = ?, stock = ? WHERE id_producto = ?";
         $stmt_prod = $pdo->prepare($sql_prod);
-        $stmt_prod->execute([$id_categoria, $nombre_producto, $precio, $stock, $id_producto]);
+        $stmt_prod->execute([$nombre_producto, $precio, $stock, $id_producto]);
 
         $sql_det = "INSERT INTO detalle_producto 
             (id_producto, descripcion, unidad_medida, peso_neto, link_documentos)
@@ -134,7 +159,9 @@ try {
         echo json_encode(['status' => 'error', 'message' => 'Acción no válida o faltan datos.']);
     }
 } catch (PDOException $e) {
-    if (isset($pdo)) $pdo->rollBack();
+    if (isset($pdo) && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     http_response_code(500);
     error_log("Error en inventario_actions: " . $e->getMessage());
     echo json_encode(['status' => 'error', 'message' => 'No se pudo procesar la solicitud en la base de datos.']);

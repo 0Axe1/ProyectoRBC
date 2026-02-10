@@ -4,6 +4,11 @@ header('Content-Type: application/json');
 
 require_once __DIR__ . '/../config/db_connection.php';
 
+// --- Constantes de validación ---
+const MIN_USERNAME_LENGTH = 3;
+const MAX_USERNAME_LENGTH = 50;
+const MIN_PASSWORD_LENGTH = 6;
+
 $pdo = null;
 try {
     $pdo = conectarDB();
@@ -53,8 +58,26 @@ try {
         if (empty($nombre_usuario) || empty($id_rol)) {
             throw new Exception('Todos los campos marcados con * son requeridos.');
         }
+        if (mb_strlen($nombre_usuario) < MIN_USERNAME_LENGTH || mb_strlen($nombre_usuario) > MAX_USERNAME_LENGTH) {
+            throw new Exception('El nombre de usuario debe tener entre ' . MIN_USERNAME_LENGTH . ' y ' . MAX_USERNAME_LENGTH . ' caracteres.');
+        }
         if ($action === 'create' && empty($contrasena)) {
             throw new Exception('La contraseña es obligatoria para crear un usuario.');
+        }
+        if (!empty($contrasena) && mb_strlen($contrasena) < MIN_PASSWORD_LENGTH) {
+            throw new Exception('La contraseña debe tener al menos ' . MIN_PASSWORD_LENGTH . ' caracteres.');
+        }
+
+        // Verificar nombre de usuario duplicado
+        if ($action === 'create') {
+            $stmt_check = $pdo->prepare("SELECT id_usuario FROM usuarios WHERE nombre_usuario = ? AND activo = 1");
+            $stmt_check->execute([$nombre_usuario]);
+        } else {
+            $stmt_check = $pdo->prepare("SELECT id_usuario FROM usuarios WHERE nombre_usuario = ? AND id_usuario != ? AND activo = 1");
+            $stmt_check->execute([$nombre_usuario, $id_usuario]);
+        }
+        if ($stmt_check->fetch()) {
+            throw new Exception("Ya existe un usuario con el nombre '$nombre_usuario'.");
         }
 
         if ($action === 'create') {
@@ -79,21 +102,21 @@ try {
     } elseif ($action === 'delete') {
         $id_usuario = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT);
 
-        if ($id_usuario == $_SESSION['user_id']) {
-            throw new Exception('No puedes eliminar tu propio usuario.');
-        }
         if (!$id_usuario) {
             throw new Exception('ID de usuario no válido.');
         }
+        if ($id_usuario == $_SESSION['user_id']) {
+            throw new Exception('No puedes deshabilitar tu propio usuario.');
+        }
 
-        $sql = "DELETE FROM usuarios WHERE id_usuario = ?";
+        $sql = "UPDATE usuarios SET activo = 0 WHERE id_usuario = ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$id_usuario]);
 
         if ($stmt->rowCount() > 0) {
-            echo json_encode(['status' => 'success', 'message' => 'Usuario eliminado exitosamente.']);
+            echo json_encode(['status' => 'success', 'message' => 'Usuario deshabilitado exitosamente.']);
         } else {
-            throw new Exception('No se pudo eliminar el usuario.');
+            throw new Exception('No se pudo deshabilitar el usuario o ya estaba deshabilitado.');
         }
     } else {
         http_response_code(400);

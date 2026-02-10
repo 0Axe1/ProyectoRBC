@@ -4,6 +4,16 @@ header('Content-Type: application/json');
 
 require_once __DIR__ . '/../config/db_connection.php';
 
+// --- CONSTANTES DE ESTADO ---
+const ID_ESTADO_PENDIENTE = 1;
+const ID_ESTADO_ENTREGADO = 2;
+const ID_ESTADO_CANCELADO = 3;
+const ID_ESTADO_EN_PREPARACION = 4;
+
+// --- CONSTANTES DE VENTAS/PAGO ---
+const ID_ESTADO_PAGADO = 2;
+const ID_METODO_PAGO_DEFAULT = 1; // Asume 'Efectivo'
+
 $pdo = null;
 try {
      $pdo = conectarDB();
@@ -32,23 +42,85 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+/**
+ * Valida los datos comunes de creación y edición de pedidos.
+ * Retorna un array con los datos sanitizados o lanza una excepción.
+ */
+function validateOrderData($postData) {
+    $id_cliente = filter_var($postData['id_cliente'] ?? null, FILTER_VALIDATE_INT);
+    $fecha_cotizacion = $postData['fecha_cotizacion'] ?? null;
+    $direccion_entrega = trim($postData['direccion_entrega'] ?? '');
+    $detalle_json = $postData['detalle_pedido'] ?? '[]';
+    $detalle_pedido = json_decode($detalle_json, true);
+
+    if (empty($id_cliente)) {
+        throw new Exception('Debe seleccionar un cliente.', 400);
+    }
+    if (empty($fecha_cotizacion)) {
+        throw new Exception('Debe seleccionar una fecha de cotización.', 400);
+    }
+    // Validación de formato de fecha
+    if (!DateTime::createFromFormat('Y-m-d', $fecha_cotizacion)) {
+        throw new Exception('Formato de fecha de cotización no válido.', 400);
+    }
+    // Validación: la fecha de cotización no debe ser futura
+    if (strtotime($fecha_cotizacion) > strtotime(date('Y-m-d'))) {
+        throw new Exception('La fecha de cotización no puede ser futura.', 400);
+    }
+
+    // Validación de dirección de entrega
+    if (empty($direccion_entrega)) {
+        throw new Exception('La dirección de entrega es obligatoria.', 400);
+    }
+    if (strlen($direccion_entrega) < 5 || strlen($direccion_entrega) > 255) {
+        throw new Exception('La dirección de entrega debe tener entre 5 y 255 caracteres.', 400);
+    }
+
+    if (empty($detalle_pedido) || !is_array($detalle_pedido)) {
+        throw new Exception('Debe haber al menos un producto en el pedido.', 400);
+    }
+
+    return [
+        'id_cliente' => $id_cliente,
+        'fecha_cotizacion' => $fecha_cotizacion,
+        'direccion_entrega' => $direccion_entrega,
+        'detalle_pedido' => $detalle_pedido
+    ];
+}
+
 
 $action = $_REQUEST['action'] ?? '';
 
 try {
-    // --- OBTENER DATOS PARA EL MODAL (CLIENTES Y PRODUCTOS) ---
+    // --- OBTENER DATOS PARA EL MODAL ---
     if ($action === 'get_form_data' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        // OPTIMIZACIÓN: Ya no enviamos clientes ni productos, se buscarán por demanda
         $response = ['clientes' => [], 'productos' => []];
-        
-        $clientes_sql = "SELECT id_cliente, nombre_razon_social, ubicacion FROM clientes WHERE estado = 1 ORDER BY nombre_razon_social ASC";
-        $response['clientes'] = $pdo->query($clientes_sql)->fetchAll(PDO::FETCH_ASSOC);
-
-        // OPTIMIZACIÓN: Ya no enviamos todos los productos, se buscarán por demanda
-        $response['productos'] = []; 
-
         echo json_encode($response);
     
     
+    // --- BUSCAR CLIENTES (AUTOCOMPLETE) ---
+    } elseif ($action === 'search_clients' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        $term = trim($_GET['term'] ?? '');
+        
+        if (strlen($term) < 2) {
+             echo json_encode([]);
+             exit;
+        }
+
+        $sql = "SELECT id_cliente, nombre_razon_social, ubicacion
+                FROM clientes 
+                WHERE estado = 1 
+                AND (nombre_razon_social LIKE ? OR id_cliente LIKE ?)
+                ORDER BY nombre_razon_social ASC LIMIT 10";
+        
+        $stmt = $pdo->prepare($sql);
+        $likeTerm = '%' . $term . '%';
+        $stmt->execute([$likeTerm, $likeTerm]);
+        
+        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+
+
     // --- BUSCAR PRODUCTOS (AUTOCOMPLETE) ---
     } elseif ($action === 'search_products' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         $term = trim($_GET['term'] ?? '');
@@ -124,45 +196,33 @@ try {
 
     // --- CREAR UN NUEVO PEDIDO ---
     } elseif ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        $id_cliente = filter_input(INPUT_POST, 'id_cliente', FILTER_VALIDATE_INT);
-        $fecha_cotizacion = $_POST['fecha_cotizacion'] ?? null;
-        $direccion_entrega = trim($_POST['direccion_entrega'] ?? '');
-        $detalle_json = $_POST['detalle_pedido'] ?? '[]';
-        $detalle_pedido = json_decode($detalle_json, true);
-        $ID_ESTADO_PENDIENTE = 1;
+        $data = validateOrderData($_POST);
+        $id_cliente = $data['id_cliente'];
+        $fecha_cotizacion = $data['fecha_cotizacion'];
+        $direccion_entrega = $data['direccion_entrega'];
+        $detalle_pedido = $data['detalle_pedido'];
 
-        if (empty($id_cliente)) {
-            throw new Exception('Debe seleccionar un cliente.', 400);
-        }
-        if (empty($fecha_cotizacion)) {
-            throw new Exception('Debe seleccionar una fecha de cotización.', 400);
-        }
-        // Validación de formato de fecha
-        if (!DateTime::createFromFormat('Y-m-d', $fecha_cotizacion)) {
-            throw new Exception('Formato de fecha de cotización no válido.', 400);
-        }
-        // Validación: la fecha de cotización no debe ser futura
-        if (strtotime($fecha_cotizacion) > strtotime(date('Y-m-d'))) {
-            throw new Exception('La fecha de cotización no puede ser futura.', 400);
-        }
-
-        // Validación de dirección de entrega
-        if (empty($direccion_entrega)) {
-            throw new Exception('La dirección de entrega es obligatoria.', 400);
-        }
-        if (strlen($direccion_entrega) < 5 || strlen($direccion_entrega) > 255) {
-            throw new Exception('La dirección de entrega debe tener entre 5 y 255 caracteres.', 400);
-        }
-
-        if (empty($detalle_pedido) || !is_array($detalle_pedido)) {
-            throw new Exception('Debe agregar al menos un producto al pedido.', 400);
+        // --- PREVENCIÓN DE DOBLE ENVÍO ---
+        // Verificar si ya existe un pedido idéntico creado en los últimos 30 segundos
+        // Criterio: Mismo cliente, misma fecha cotización, misma dirección
+        $sql_duplicate = "SELECT id_pedido FROM pedidos 
+                          WHERE id_cliente = ? 
+                          AND fecha_cotizacion = ? 
+                          AND direccion_entrega = ? 
+                          AND fecha_creacion > (NOW() - INTERVAL 30 SECOND) 
+                          LIMIT 1";
+        $stmt_duplicate = $pdo->prepare($sql_duplicate);
+        $stmt_duplicate->execute([$id_cliente, $fecha_cotizacion, $direccion_entrega]);
+        
+        if ($stmt_duplicate->fetch()) {
+            throw new Exception('Ya se ha creado un pedido idéntico recientemente. Por favor espera unos segundos o verifica si ya se guardó.', 429); // 429 Too Many Requests
         }
 
         $pdo->beginTransaction();
 
         $sql_pedido = "INSERT INTO pedidos (id_cliente, id_estado_pedido, fecha_cotizacion, direccion_entrega) VALUES (?, ?, ?, ?)";
         $stmt_pedido = $pdo->prepare($sql_pedido);
-        $stmt_pedido->execute([$id_cliente, $ID_ESTADO_PENDIENTE, $fecha_cotizacion, $direccion_entrega]);
+        $stmt_pedido->execute([$id_cliente, ID_ESTADO_PENDIENTE, $fecha_cotizacion, $direccion_entrega]);
         $id_pedido = $pdo->lastInsertId();
 
         $detalle_stmt = $pdo->prepare("INSERT INTO detalle_de_pedido (id_pedido, id_producto, cantidad_pedido, precio_unitario, precio_total_cotizado) VALUES (?, ?, ?, ?, ?)");
@@ -182,6 +242,7 @@ try {
             // Verificar stock
             $stock_stmt->execute([$cantidad, $id_producto, $cantidad]);
             if ($stock_stmt->rowCount() === 0) {
+                // Obtenemos nombre para el error
                 $prod_stmt = $pdo->prepare("SELECT nombre_producto FROM productos WHERE id_producto = ?");
                 $prod_stmt->execute([$id_producto]);
                 $prod_nombre = $prod_stmt->fetchColumn() ?? 'ID ' . $id_producto;
@@ -197,44 +258,22 @@ try {
     // --- ACTUALIZAR UN PEDIDO (DATOS GENERALES Y PRODUCTOS) ---
     } elseif ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $id_pedido = filter_input(INPUT_POST, 'id_pedido', FILTER_VALIDATE_INT);
-        $id_cliente = filter_input(INPUT_POST, 'id_cliente', FILTER_VALIDATE_INT);
-        $fecha_cotizacion = $_POST['fecha_cotizacion'] ?? null;
-        $direccion_entrega = trim($_POST['direccion_entrega'] ?? '');
-        $detalle_json = $_POST['detalle_pedido'] ?? '[]';
-        $detalle_pedido = json_decode($detalle_json, true);
-        $ID_ESTADO_PENDIENTE = 1;
-
         if (empty($id_pedido)) {
             throw new Exception('ID de pedido no válido.', 400);
         }
-        if (empty($id_cliente)) {
-            throw new Exception('Debe seleccionar un cliente.', 400);
-        }
-        if (empty($fecha_cotizacion)) {
-            throw new Exception('Debe seleccionar una fecha de cotización.', 400);
-        }
-        if (!DateTime::createFromFormat('Y-m-d', $fecha_cotizacion)) {
-            throw new Exception('Formato de fecha de cotización no válido.', 400);
-        }
-        if (strtotime($fecha_cotizacion) > strtotime(date('Y-m-d'))) {
-            throw new Exception('La fecha de cotización no puede ser futura.', 400);
-        }
-        if (empty($direccion_entrega)) {
-            throw new Exception('La dirección de entrega es obligatoria.', 400);
-        }
-        if (strlen($direccion_entrega) < 5 || strlen($direccion_entrega) > 255) {
-            throw new Exception('La dirección de entrega debe tener entre 5 y 255 caracteres.', 400);
-        }
-        if (empty($detalle_pedido) || !is_array($detalle_pedido)) {
-            throw new Exception('Debe haber al menos un producto en el pedido.', 400);
-        }
+
+        $data = validateOrderData($_POST);
+        $id_cliente = $data['id_cliente'];
+        $fecha_cotizacion = $data['fecha_cotizacion'];
+        $direccion_entrega = $data['direccion_entrega'];
+        $detalle_pedido = $data['detalle_pedido'];
 
         $pdo->beginTransaction();
 
         // 1. Verificar si el pedido existe y es editable
         $check_sql = "SELECT id_pedido FROM pedidos WHERE id_pedido = ? AND id_estado_pedido = ?";
         $check_stmt = $pdo->prepare($check_sql);
-        $check_stmt->execute([$id_pedido, $ID_ESTADO_PENDIENTE]);
+        $check_stmt->execute([$id_pedido, ID_ESTADO_PENDIENTE]);
         if (!$check_stmt->fetch()) {
              throw new Exception('El pedido no existe o ya no está en estado "Pendiente".', 400);
         }
@@ -294,12 +333,7 @@ try {
     // --- MARCAR PEDIDO COMO ENTREGADO ---
     } elseif ($action === 'deliver' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $id_pedido = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
-        $ID_ESTADO_PENDIENTE = 1;
-        $ID_ESTADO_EN_PREPARACION = 4;
-        $ID_ESTADO_ENTREGADO = 2;
-        $ID_ESTADO_PAGADO = 2;
-        $ID_METODO_PAGO_DEFAULT = 1; // Asume 'Efectivo'
-
+   
         if (!$id_pedido) {
             throw new Exception('ID de pedido no válido.', 400);
         }
@@ -311,7 +345,7 @@ try {
                            JOIN detalle_de_pedido dp ON p.id_pedido = dp.id_pedido
                            WHERE p.id_pedido = ? AND p.id_estado_pedido IN (?, ?)";
         $stmt_get_pedido = $pdo->prepare($sql_get_pedido);
-        $stmt_get_pedido->execute([$id_pedido, $ID_ESTADO_PENDIENTE, $ID_ESTADO_EN_PREPARACION]);
+        $stmt_get_pedido->execute([$id_pedido, ID_ESTADO_PENDIENTE, ID_ESTADO_EN_PREPARACION]);
         $detalles = $stmt_get_pedido->fetchAll(PDO::FETCH_ASSOC);
 
         if (empty($detalles)) {
@@ -322,7 +356,7 @@ try {
        
         $sql_venta = "INSERT INTO ventas (id_pedido, id_metodo_pago, id_estado_pago, fecha_venta, total_venta) VALUES (?, ?, ?, NOW(), ?)";
         $stmt_venta = $pdo->prepare($sql_venta);
-        $stmt_venta->execute([$id_pedido, $ID_METODO_PAGO_DEFAULT, $ID_ESTADO_PAGADO, $total_venta]);
+        $stmt_venta->execute([$id_pedido, ID_METODO_PAGO_DEFAULT, ID_ESTADO_PAGADO, $total_venta]);
         $id_venta = $pdo->lastInsertId();
 
         $detalle_venta_stmt = $pdo->prepare("INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario_venta, subtotal) VALUES (?, ?, ?, ?, ?)");
@@ -332,7 +366,7 @@ try {
         }
 
         $pedido_stmt = $pdo->prepare("UPDATE pedidos SET id_estado_pedido = ? WHERE id_pedido = ?");
-        $pedido_stmt->execute([$ID_ESTADO_ENTREGADO, $id_pedido]);
+        $pedido_stmt->execute([ID_ESTADO_ENTREGADO, $id_pedido]);
 
         $pdo->commit();
         echo json_encode(['status' => 'success', 'message' => 'Pedido marcado como Entregado. Se generó la venta.']);
@@ -340,10 +374,7 @@ try {
     // --- CANCELAR UN PEDIDO ---
     } elseif ($action === 'cancel' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $id_pedido = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
-        $ID_ESTADO_PENDIENTE = 1;
-        $ID_ESTADO_EN_PREPARACION = 4;
-        $ID_ESTADO_CANCELADO = 3;
-
+       
         if (!$id_pedido) {
             throw new Exception('ID de pedido no válido.', 400);
         }
@@ -355,7 +386,7 @@ try {
         $stmt_check->execute([$id_pedido]);
         $estado_actual = $stmt_check->fetchColumn();
 
-        if ($estado_actual != $ID_ESTADO_PENDIENTE && $estado_actual != $ID_ESTADO_EN_PREPARACION) {
+        if ($estado_actual != ID_ESTADO_PENDIENTE && $estado_actual != ID_ESTADO_EN_PREPARACION) {
             throw new Exception('No se puede cancelar el pedido (ya fue entregado o cancelado).', 400);
         }
 
@@ -369,7 +400,7 @@ try {
         }
        
         $pedido_stmt = $pdo->prepare("UPDATE pedidos SET id_estado_pedido = ? WHERE id_pedido = ?");
-        $pedido_stmt->execute([$ID_ESTADO_CANCELADO, $id_pedido]);
+        $pedido_stmt->execute([ID_ESTADO_CANCELADO, $id_pedido]);
 
         $pdo->commit();
         echo json_encode(['status' => 'success', 'message' => 'Pedido cancelado exitosamente. El stock ha sido restaurado.']);

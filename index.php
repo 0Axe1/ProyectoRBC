@@ -28,7 +28,6 @@
         'clientes'   => 'ver_clientes',
         'pedidos'    => 'ver_pedidos',
         'inventario' => 'ver_inventario',
-        'categorias' => 'ver_categorias', // <-- AÑADIDO: Mapeo del permiso de categorías
         'reportes'   => 'ver_reportes',
         'usuarios'   => 'ver_usuarios'
     ];
@@ -48,7 +47,7 @@
     // --- FIN DE LA LÓGICA DE AUTORIZACIÓN ---
 
     // Una 'lista blanca' de todas las páginas válidas
-    $paginasPermitidas = ['dashboard', 'clientes', 'pedidos', 'inventario', 'categorias', 'reportes', 'usuarios']; // <-- AÑADIDO 'categorias' aquí
+    $paginasPermitidas = ['dashboard', 'clientes', 'pedidos', 'inventario', 'reportes', 'usuarios', 'deshabilitados']; // <-- AÑADIDO 'deshabilitados'
     
     // Si la página actual no está en la lista blanca (aunque el usuario tenga permiso), 
     // se le redirige al dashboard.
