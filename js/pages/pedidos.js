@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const productoSearch = document.getElementById('producto_search');
     const idProductoSeleccionado = document.getElementById('id_producto_seleccionado');
     const productoSearchResults = document.getElementById('producto_search_results');
+    const unidadMedidaDisplay = document.getElementById('unidad_medida_display'); // NEW
+    const pesoNetoDisplay = document.getElementById('peso_neto_display'); // NEW
     const cantidadInput = document.getElementById('cantidad');
     const precioInput = document.getElementById('precio');
     const addItemBtn = document.getElementById('add-item-btn');
@@ -192,6 +194,10 @@ document.addEventListener('DOMContentLoaded', () => {
         productoSearch.value = product.nombre_descriptivo;
         idProductoSeleccionado.value = product.id_producto;
         precioInput.value = product.precio;
+
+        if (unidadMedidaDisplay) unidadMedidaDisplay.value = product.unidad_medida || '';
+        if (pesoNetoDisplay) pesoNetoDisplay.value = product.peso_neto || '';
+
         productoSearchResults.classList.add('hidden');
         productoSearchResults.innerHTML = '';
     }
@@ -270,6 +276,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Limpiar campos
             if (productoSearch) productoSearch.value = '';
             if (idProductoSeleccionado) idProductoSeleccionado.value = '';
+            if (unidadMedidaDisplay) unidadMedidaDisplay.value = '';
+            if (pesoNetoDisplay) pesoNetoDisplay.value = '';
             cantidadInput.value = '';
             precioInput.value = '';
             currentSelectedProduct = null;
@@ -344,6 +352,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Reset search fields
             if (productoSearch) productoSearch.value = '';
             if (idProductoSeleccionado) idProductoSeleccionado.value = '';
+            if (unidadMedidaDisplay) unidadMedidaDisplay.value = ''; // NEW
+            if (pesoNetoDisplay) pesoNetoDisplay.value = ''; // NEW
             currentSelectedProduct = null;
 
             detallePedido = [];
@@ -439,6 +449,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Reset search fields
             if (productoSearch) productoSearch.value = '';
             if (idProductoSeleccionado) idProductoSeleccionado.value = '';
+            if (unidadMedidaDisplay) unidadMedidaDisplay.value = ''; // NEW
+            if (pesoNetoDisplay) pesoNetoDisplay.value = ''; // NEW
             currentSelectedProduct = null;
 
             // Habilitar secciones para editar

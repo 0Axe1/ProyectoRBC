@@ -48,16 +48,10 @@ $nombre_producto = trim($_POST['nombre_producto'] ?? '');
 $stock = filter_var($_POST['stock'] ?? null, FILTER_VALIDATE_INT, ["options" => ["min_range" => 0]]);
 $precio = filter_var($_POST['precio'] ?? null, FILTER_VALIDATE_FLOAT, ["options" => ["min_range" => 0.01]]);
 $descripcion = trim($_POST['descripcion'] ?? '') ?: null;
-$variedad = trim($_POST['variedad'] ?? '') ?: null;
-$origen = trim($_POST['origen'] ?? '') ?: null;
-$presentacion = trim($_POST['presentacion'] ?? '') ?: null;
 $unidad_medida = trim($_POST['unidad_medida'] ?? '') ?: null;
 $peso_neto = filter_var($_POST['peso_neto'] ?? null, FILTER_VALIDATE_FLOAT, ["options" => ["min_range" => 0]]);
-$calidad = trim($_POST['calidad'] ?? '') ?: null;
-$fecha_cosecha = trim($_POST['fecha_cosecha'] ?? '') ?: null;
-$observaciones = trim($_POST['observaciones'] ?? '') ?: null;
+$link_documentos = trim($_POST['link_documentos'] ?? '') ?: null;
 
-if (empty($fecha_cosecha)) $fecha_cosecha = null;
 if ($peso_neto === false || $peso_neto === '') $peso_neto = null;
 
 try {
@@ -82,12 +76,11 @@ try {
         $new_id_producto = $pdo->lastInsertId();
 
         $sql_det = "INSERT INTO detalle_producto 
-            (id_producto, descripcion, variedad, origen, presentacion, unidad_medida, peso_neto, calidad, fecha_cosecha, observaciones)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            (id_producto, descripcion, unidad_medida, peso_neto, link_documentos)
+            VALUES (?, ?, ?, ?, ?)";
         $stmt_det = $pdo->prepare($sql_det);
         $stmt_det->execute([
-            $new_id_producto, $descripcion, $variedad, $origen, $presentacion,
-            $unidad_medida, $peso_neto, $calidad, $fecha_cosecha, $observaciones
+            $new_id_producto, $descripcion, $unidad_medida, $peso_neto, $link_documentos
         ]);
 
         $pdo->commit();
@@ -113,17 +106,16 @@ try {
         $stmt_prod->execute([$id_categoria, $nombre_producto, $precio, $stock, $id_producto]);
 
         $sql_det = "INSERT INTO detalle_producto 
-            (id_producto, descripcion, variedad, origen, presentacion, unidad_medida, peso_neto, calidad, fecha_cosecha, observaciones)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id_producto, descripcion, unidad_medida, peso_neto, link_documentos)
+            VALUES (?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
-                descripcion = VALUES(descripcion), variedad = VALUES(variedad), origen = VALUES(origen),
-                presentacion = VALUES(presentacion), unidad_medida = VALUES(unidad_medida),
-                peso_neto = VALUES(peso_neto), calidad = VALUES(calidad), fecha_cosecha = VALUES(fecha_cosecha),
-                observaciones = VALUES(observaciones)";
+                descripcion = VALUES(descripcion),
+                unidad_medida = VALUES(unidad_medida),
+                peso_neto = VALUES(peso_neto),
+                link_documentos = VALUES(link_documentos)";
         $stmt_det = $pdo->prepare($sql_det);
         $stmt_det->execute([
-            $id_producto, $descripcion, $variedad, $origen, $presentacion,
-            $unidad_medida, $peso_neto, $calidad, $fecha_cosecha, $observaciones
+            $id_producto, $descripcion, $unidad_medida, $peso_neto, $link_documentos
         ]);
 
         $pdo->commit();

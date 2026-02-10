@@ -66,14 +66,9 @@ $sql = "SELECT
             c.id_categoria,
             c.nombre_categoria,
             dp.descripcion,
-            dp.variedad,
-            dp.origen,
-            dp.presentacion,
             dp.unidad_medida,
             dp.peso_neto,
-            dp.calidad,
-            dp.fecha_cosecha,
-            dp.observaciones
+            dp.link_documentos
         FROM productos p
         JOIN categorias_producto c ON p.id_categoria = c.id_categoria
         LEFT JOIN detalle_producto dp ON p.id_producto = dp.id_producto
@@ -173,14 +168,9 @@ $categorias = $stmt_categorias->fetchAll(PDO::FETCH_ASSOC);
                                         data-precio="<?php echo e($item['precio'] ?? 0); ?>"
                                         data-stock="<?php echo e($item['stock'] ?? 0); ?>"
                                         data-descripcion="<?php echo e($item['descripcion'] ?? ''); ?>"
-                                        data-variedad="<?php echo e($item['variedad'] ?? ''); ?>"
-                                        data-origen="<?php echo e($item['origen'] ?? ''); ?>"
-                                        data-presentacion="<?php echo e($item['presentacion'] ?? ''); ?>"
                                         data-unidad-medida="<?php echo e($item['unidad_medida'] ?? ''); ?>"
                                         data-peso-neto="<?php echo e($item['peso_neto'] ?? ''); ?>"
-                                        data-calidad="<?php echo e($item['calidad'] ?? ''); ?>"
-                                        data-fecha-cosecha="<?php echo e($item['fecha_cosecha'] ?? ''); ?>"
-                                        data-observaciones="<?php echo e($item['observaciones'] ?? ''); ?>">
+                                        data-link-documentos="<?php echo e($item['link_documentos'] ?? ''); ?>">
                                     <i data-lucide="eye" class="w-4 h-4 mr-1"></i> Ver
                                 </button>
                                 
@@ -193,14 +183,9 @@ $categorias = $stmt_categorias->fetchAll(PDO::FETCH_ASSOC);
                                         data-precio="<?php echo e($item['precio'] ?? 0); ?>"
                                         data-stock="<?php echo e($item['stock'] ?? 0); ?>"
                                         data-descripcion="<?php echo e($item['descripcion'] ?? ''); ?>"
-                                        data-variedad="<?php echo e($item['variedad'] ?? ''); ?>"
-                                        data-origen="<?php echo e($item['origen'] ?? ''); ?>"
-                                        data-presentacion="<?php echo e($item['presentacion'] ?? ''); ?>"
                                         data-unidad-medida="<?php echo e($item['unidad_medida'] ?? ''); ?>"
                                         data-peso-neto="<?php echo e($item['peso_neto'] ?? ''); ?>"
-                                        data-calidad="<?php echo e($item['calidad'] ?? ''); ?>"
-                                        data-fecha-cosecha="<?php echo e($item['fecha_cosecha'] ?? ''); ?>"
-                                        data-observaciones="<?php echo e($item['observaciones'] ?? ''); ?>">
+                                        data-link-documentos="<?php echo e($item['link_documentos'] ?? ''); ?>">
                                     <i data-lucide="edit" class="w-4 h-4 mr-1"></i> Editar
                                 </button>
                                
@@ -316,26 +301,7 @@ $categorias = $stmt_categorias->fetchAll(PDO::FETCH_ASSOC);
                         <textarea id="descripcion" name="descripcion" rows="2" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"></textarea>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label for="variedad" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Variedad</label>
-                            <input type="text" id="variedad" name="variedad" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                        </div>
-                        <div>
-                            <label for="origen" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Origen</label>
-                            <input type="text" id="origen" name="origen" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                        </div>
-                        <div>
-                            <label for="calidad" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Calidad</label>
-                            <input type="text" id="calidad" name="calidad" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label for="presentacion" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Presentación</label>
-                            <input type="text" id="presentacion" name="presentacion" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" placeholder="Ej: Saco 50kg">
-                        </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label for="unidad_medida" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unidad de Medida</label>
                             <input type="text" id="unidad_medida" name="unidad_medida" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" placeholder="Ej: kg, L, Unid.">
@@ -345,18 +311,12 @@ $categorias = $stmt_categorias->fetchAll(PDO::FETCH_ASSOC);
                             <input type="number" id="peso_neto" name="peso_neto" min="0" step="0.01" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
                         </div>
                     </div>
-
-                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                         <div>
-                            <label for="fecha_cosecha" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Cosecha/Lote</label>
-                            <input type="date" id="fecha_cosecha" name="fecha_cosecha" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label for="observaciones" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observaciones</label>
-                            <input type="text" id="observaciones" name="observaciones" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                        </div>
-                     </div>
-                 </div>
+                    
+                    <div>
+                        <label for="link_documentos" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Link Documentos</label>
+                        <input type="text" id="link_documentos" name="link_documentos" class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" placeholder="Ej: https://drive.google.com/...">
+                    </div>
+                </div>
             </div>
 
             <div class="mt-8 flex justify-end space-x-4 pt-4 border-t dark:border-gray-700">

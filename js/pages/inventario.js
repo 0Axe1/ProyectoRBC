@@ -29,14 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
         precioInput.value = button.dataset.precio ?? '';
         stockInput.value = button.dataset.stock ?? '';
         document.getElementById('descripcion').value = button.dataset.descripcion ?? '';
-        document.getElementById('variedad').value = button.dataset.variedad ?? '';
-        document.getElementById('origen').value = button.dataset.origen ?? '';
-        document.getElementById('presentacion').value = button.dataset.presentacion ?? '';
         document.getElementById('unidad_medida').value = button.dataset.unidadMedida ?? '';
         document.getElementById('peso_neto').value = button.dataset.pesoNeto ?? '';
-        document.getElementById('calidad').value = button.dataset.calidad ?? '';
-        document.getElementById('fecha_cosecha').value = button.dataset.fechaCosecha ?? '';
-        document.getElementById('observaciones').value = button.dataset.observaciones ?? '';
+        document.getElementById('link_documentos').value = button.dataset.linkDocumentos ?? '';
     };
 
     const setFormEnabled = (isEnabled) => {

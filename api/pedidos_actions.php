@@ -63,17 +63,19 @@ try {
                     CONCAT(
                         p.nombre_producto, 
                         ' (', 
-                        COALESCE(dp.variedad, 'Genérico'), 
-                        ', ', 
-                        COALESCE(dp.presentacion, 'N/A'), 
+                        COALESCE(dp.unidad_medida, 'N/A'), 
+                        ' - ', 
+                        COALESCE(dp.peso_neto, '0'), 
                         ')'
                     ) AS nombre_descriptivo,
                     p.stock, 
-                    p.precio 
+                    p.precio,
+                    dp.unidad_medida,
+                    dp.peso_neto
                 FROM productos p
                 LEFT JOIN detalle_producto dp ON p.id_producto = dp.id_producto
                 WHERE p.activo = 1 
-                AND (p.nombre_producto LIKE ? OR dp.variedad LIKE ? OR dp.descripcion LIKE ? OR p.id_producto LIKE ?)
+                AND (p.nombre_producto LIKE ? OR dp.unidad_medida LIKE ? OR dp.descripcion LIKE ? OR p.id_producto LIKE ?)
                 ORDER BY p.nombre_producto ASC LIMIT 10";
         
         $stmt = $pdo->prepare($sql);
@@ -103,9 +105,9 @@ try {
                             CONCAT(
                                 p.nombre_producto, 
                                 ' (', 
-                                COALESCE(dprod.variedad, 'Genérico'), 
-                                ', ', 
-                                COALESCE(dprod.presentacion, 'N/A'), 
+                                COALESCE(dprod.unidad_medida, 'N/A'), 
+                                ' - ', 
+                                COALESCE(dprod.peso_neto, '0'), 
                                 ')'
                             ) AS nombre_producto,
                             dp.cantidad_pedido, 

@@ -298,7 +298,15 @@ function pagination_url($page_num, $search) {
                         <input type="hidden" id="id_producto_seleccionado">
                         <div id="producto_search_results" class="absolute z-10 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
                     </div>
-                    <div class="md:col-span-3">
+                     <div class="md:col-span-2">
+                        <label for="unidad_medida_display" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Unidad</label>
+                        <input type="text" id="unidad_medida_display" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg cursor-not-allowed" readonly>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="peso_neto_display" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Peso</label>
+                        <input type="text" id="peso_neto_display" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg cursor-not-allowed" readonly>
+                    </div>
+                    <div class="md:col-span-2">
                         <label for="cantidad" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Cantidad</label>
                         <input type="number" id="cantidad" min="1" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
                     </div>
@@ -306,9 +314,9 @@ function pagination_url($page_num, $search) {
                         <label for="precio" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Precio Unit.</label>
                         <input type="number" id="precio" min="0.01" step="0.01" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
                     </div>
-                    <div class="md:col-span-3 flex">
-                        <button type="button" id="add-item-btn" class="w-full flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-transform duration-300 hover:scale-105">
-                            <i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> Agregar
+                    <div class="md:col-span-12 flex justify-end mt-2">
+                        <button type="button" id="add-item-btn" class="flex items-center justify-center bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-transform duration-300 hover:scale-105">
+                            <i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> Agregar Item
                         </button>
                     </div>
                 </div>
