@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 04-02-2026 a las 19:20:32
+-- Tiempo de generación: 10-02-2026 a las 22:21:31
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -20,27 +20,6 @@ SET time_zone = "+00:00";
 --
 -- Base de datos: `db_rbc_3nf`
 --
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `categorias_producto`
---
-
-CREATE TABLE `categorias_producto` (
-  `id_categoria` int(11) NOT NULL,
-  `nombre_categoria` varchar(100) NOT NULL,
-  `descripcion` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `categorias_producto`
---
-
-INSERT INTO `categorias_producto` (`id_categoria`, `nombre_categoria`, `descripcion`) VALUES
-(1, 'Cereales', 'Granos secos como maíz, trigo, etc.'),
-(2, 'Legumbres', 'Como garbanzos, lentejas, etc.'),
-(3, 'Procesados', 'Productos que han pasado por algún proceso industrial.');
 
 -- --------------------------------------------------------
 
@@ -73,11 +52,18 @@ INSERT INTO `clientes` (`id_cliente`, `nombre_razon_social`, `nit_ruc`, `ubicaci
 (9, 'P41', 'P4111211', 'casa41', 1, 0.00, 0, '2025-10-30 16:32:23', '2025-10-30 16:32:41'),
 (10, 'P51', 'P51112111', 'casa51', 1, 0.00, 0, '2025-10-30 17:23:57', '2025-10-30 17:24:15'),
 (11, 'Juan Pérez Rodríguez', '90123456-7', 'Bogotá, Colombia', 1, 0.00, 1, '2025-11-02 19:02:27', '2025-11-09 22:16:58'),
-(12, 'Comercial Andina S.A.S.', '90156789-3', 'Quito, Ecuador', 1, 0.00, 1, '2025-11-09 22:21:42', '2025-11-09 22:21:42'),
+(12, 'Comercial Andina S.A.S.1', '90156789-3', 'Quito, Ecuador', 1, 0.00, 1, '2025-11-09 22:21:42', '2026-02-10 11:59:16'),
 (13, 'Ricardo Gómez Herrera', '10456789-4', 'Lima, Perú', 1, 0.00, 1, '2025-11-09 22:22:53', '2025-11-09 22:22:53'),
 (14, 'Laura Torres Valencia', '10789012-5', 'Cali, Colombia', 1, 0.00, 1, '2025-11-09 22:24:10', '2025-11-09 22:24:10'),
 (15, 'Industrias Sol del Norte', '90189076-1', 'Santa Cruz, Bolivia', 1, 0.00, 1, '2025-11-09 22:25:08', '2025-11-09 22:25:08'),
-(16, 'Juanito Perez', '123123111', 'CAlle11', 1, 0.00, 0, '2026-02-03 20:59:20', '2026-02-03 20:59:46');
+(16, 'Juanito Perez', '123123111', 'CAlle11', 1, 0.00, 0, '2026-02-03 20:59:20', '2026-02-03 20:59:46'),
+(19, 'reychel123', '123123111123', 'mi casa', 1, 0.00, 1, '2026-02-10 11:58:53', '2026-02-10 11:58:53'),
+(20, 'Comercial Andina', '90156789-31', 'Quito, Ecuador', 1, 0.00, 1, '2026-02-10 11:59:45', '2026-02-10 11:59:45'),
+(21, 'Comercial Andina 11', '90156789-311', 'Quito, Ecuador', 1, 0.00, 0, '2026-02-10 11:59:53', '2026-02-10 12:00:32'),
+(22, 'Comercial Andina 1122', '90156789-3112', 'Quito, Ecuador', 1, 0.00, 1, '2026-02-10 12:00:05', '2026-02-10 12:00:05'),
+(23, 'Comercial Andina 11221', '90156789-31121', 'Quito, Ecuador', 1, 0.00, 1, '2026-02-10 12:00:13', '2026-02-10 12:00:13'),
+(24, 'JUNITO ALCACHOFA1', '099919991', 'Quito, Ecuador', 1, 0.00, 1, '2026-02-10 15:46:43', '2026-02-10 16:41:05'),
+(25, 'ASD', 'ASDASD', 'Quito, Ecuador', 1, 0.00, 1, '2026-02-10 15:47:50', '2026-02-10 15:48:26');
 
 -- --------------------------------------------------------
 
@@ -109,7 +95,14 @@ INSERT INTO `contactos_cliente` (`id_contacto`, `id_cliente`, `id_tipo_contacto`
 (11, 13, 3, 'ricardogh@outlook.com'),
 (12, 14, 3, 'lauratorresv@gmail.com'),
 (13, 15, 3, 'contacto@solnorte.bo'),
-(14, 16, 1, '12345661');
+(14, 16, 1, '12345661'),
+(15, 19, 1, '1123123123'),
+(16, 20, 3, 'ventas@comercialandina.ec'),
+(17, 21, 3, 'ventas@comercialandina.ec'),
+(18, 22, 3, 'ventas@comercialandina.ec'),
+(19, 23, 3, 'ventas@comercialandina.ec'),
+(20, 24, 3, 'ventas@comercialandina.ec'),
+(21, 25, 3, 'ventas@comercialandina.ec');
 
 -- --------------------------------------------------------
 
@@ -150,7 +143,22 @@ INSERT INTO `detalle_de_pedido` (`id_detalle_pedido`, `id_pedido`, `id_producto`
 (17, 12, 1, 100, 123.00, 12300.00),
 (18, 13, 5, 200, 500.00, 100000.00),
 (19, 14, 3, 10, 121.00, 1210.00),
-(20, 14, 4, 50, 120.00, 6000.00);
+(20, 14, 4, 50, 120.00, 6000.00),
+(21, 15, 6, 100, 111.00, 11100.00),
+(22, 16, 7, 200, 111.00, 22200.00),
+(23, 17, 5, 400, 500.00, 200000.00),
+(24, 18, 6, 100, 111.00, 11100.00),
+(25, 18, 10, 100, 100.00, 10000.00),
+(27, 19, 10, 100, 100.00, 10000.00),
+(28, 20, 10, 100, 100.00, 10000.00),
+(30, 21, 6, 100, 111.00, 11100.00),
+(31, 21, 9, 100, 100.00, 10000.00),
+(32, 22, 4, 50, 120.00, 6000.00),
+(34, 23, 6, 50, 111.00, 5550.00),
+(35, 23, 13, 400, 100.00, 40000.00),
+(37, 24, 1, 100, 123.00, 12300.00),
+(38, 24, 9, 20, 100.00, 2000.00),
+(39, 25, 1, 20, 123.00, 2460.00);
 
 -- --------------------------------------------------------
 
@@ -162,28 +170,31 @@ CREATE TABLE `detalle_producto` (
   `id_detalle` int(11) NOT NULL,
   `id_producto` int(11) NOT NULL,
   `descripcion` text DEFAULT NULL,
-  `variedad` varchar(100) DEFAULT NULL,
-  `origen` varchar(150) DEFAULT NULL,
-  `presentacion` varchar(100) DEFAULT NULL,
   `unidad_medida` varchar(20) DEFAULT NULL,
   `peso_neto` decimal(10,2) DEFAULT NULL,
-  `calidad` varchar(50) DEFAULT NULL,
-  `fecha_cosecha` date DEFAULT NULL,
-  `observaciones` text DEFAULT NULL
+  `link_documentos` varchar(512) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `detalle_producto`
 --
 
-INSERT INTO `detalle_producto` (`id_detalle`, `id_producto`, `descripcion`, `variedad`, `origen`, `presentacion`, `unidad_medida`, `peso_neto`, `calidad`, `fecha_cosecha`, `observaciones`) VALUES
-(1, 1, 'Maíz para pipoca (pipoca) de alta expansión.', 'Maíz Pipoca (Butterfly)', 'Bolivia - Valles Cruceños', 'Saco 50 kg', 'kg', 50.00, 'Grado A', '2025-03-10', 'Certificación orgánica pendiente'),
-(2, 2, 'Soya amarilla para procesamiento industrial.', 'Soya Amarilla', 'Argentina', 'Granel', 'kg', 1000.00, 'Exportación', '2025-04-15', 'Lote #S1A-45. Libre de OGM.'),
-(3, 3, 'undefined', 'undefined', 'undefined', 'undefined', 'undefined', NULL, 'undefined', NULL, 'undefined'),
-(4, 4, 'Garbanzo calibre 8, ideal para envasado.', 'Garbanzo Calibre 8', 'Perú', 'Saco 25 kg', 'kg', 25.00, 'Industrial', '2025-02-01', 'Control de calidad aprobado'),
-(6, 5, 'Compra Credit', '1', 'Santa Cruz', 'Saco Amarillos', 'Kg', 50.00, '1ra', '2025-11-09', 'Ninguna'),
-(8, 6, 'kabsvcjh', 'asd', 'asd', 'Saco50KG', 'Kg', 50.00, 'asd', '2025-11-11', 'lknsdvfg'),
-(9, 7, 'kabsvcjh', 'asd', 'asd', 'Saco50KG', 'Kg', 50.00, 'asd', '2025-11-11', 'lknsdvfg');
+INSERT INTO `detalle_producto` (`id_detalle`, `id_producto`, `descripcion`, `unidad_medida`, `peso_neto`, `link_documentos`) VALUES
+(1, 1, 'Maíz para pipoca (pipoca) de alta expansión.', 'kg', 50.00, NULL),
+(2, 2, 'Soya amarilla para procesamiento industrial.', 'kg', 1000.00, NULL),
+(3, 3, 'undefined', 'undefined', NULL, NULL),
+(4, 4, 'Garbanzo calibre 8, ideal para envasado.', 'kg', 25.00, NULL),
+(6, 5, 'Compra Credit', 'Kg', 50.00, NULL),
+(8, 6, 'kabsvcjh', 'Kg', 50.00, NULL),
+(9, 7, 'kabsvcjh', 'Kg', 50.00, NULL),
+(10, 8, NULL, NULL, NULL, NULL),
+(12, 9, NULL, NULL, NULL, NULL),
+(13, 10, NULL, NULL, NULL, NULL),
+(14, 11, NULL, NULL, NULL, NULL),
+(15, 12, NULL, NULL, NULL, NULL),
+(17, 13, NULL, NULL, NULL, NULL),
+(19, 14, NULL, 'kg', 50.00, NULL),
+(20, 15, NULL, 'kg', 50.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -218,7 +229,14 @@ INSERT INTO `detalle_venta` (`id_detalle_venta`, `id_venta`, `id_producto`, `can
 (11, 7, 4, 20, 220.00, 0.00),
 (12, 7, 1, 400, 200.00, 0.00),
 (13, 8, 1, 100, 123.00, 12300.00),
-(14, 9, 5, 200, 500.00, 100000.00);
+(14, 9, 5, 200, 500.00, 100000.00),
+(15, 10, 7, 200, 111.00, 22200.00),
+(16, 11, 5, 400, 500.00, 200000.00),
+(17, 12, 10, 100, 100.00, 10000.00),
+(18, 13, 6, 100, 111.00, 11100.00),
+(19, 13, 9, 100, 100.00, 10000.00),
+(20, 14, 1, 100, 123.00, 12300.00),
+(21, 14, 9, 20, 100.00, 2000.00);
 
 -- --------------------------------------------------------
 
@@ -315,7 +333,18 @@ INSERT INTO `pedidos` (`id_pedido`, `id_cliente`, `id_estado_pedido`, `fecha_cot
 (11, 12, 2, '2025-11-10', 'calle Juan jose perez', '2025-11-09 22:39:14', '2025-11-09 22:39:27'),
 (12, 14, 2, '2025-11-10', 'calle Juan jose perez', '2025-11-09 22:43:37', '2025-11-09 22:43:42'),
 (13, 12, 2, '2026-02-04', 'calle Juan jose perez', '2026-02-03 21:00:17', '2026-02-03 21:00:26'),
-(14, 15, 3, '2026-02-04', 'pipo', '2026-02-03 21:01:26', '2026-02-03 21:01:35');
+(14, 15, 3, '2026-02-04', 'pipo', '2026-02-03 21:01:26', '2026-02-03 21:01:35'),
+(15, 3, 3, '2026-02-09', 'Medellín, Colombia', '2026-02-09 14:21:26', '2026-02-09 14:22:34'),
+(16, 3, 2, '2026-02-09', 'Medellín, Colombia', '2026-02-09 14:22:14', '2026-02-09 14:22:27'),
+(17, 15, 2, '2026-02-10', 'Santa Cruz, Bolivia', '2026-02-10 11:33:27', '2026-02-10 11:34:32'),
+(18, 15, 3, '2026-02-10', 'Santa Cruz, Bolivia', '2026-02-10 11:36:28', '2026-02-10 11:36:34'),
+(19, 11, 2, '2026-02-10', 'Bogotá, Colombia', '2026-02-10 11:41:42', '2026-02-10 11:48:44'),
+(20, 11, 3, '2026-02-10', 'Bogotá, Colombia', '2026-02-10 11:49:26', '2026-02-10 11:49:31'),
+(21, 12, 2, '2026-02-10', 'Quito, Ecuador', '2026-02-10 12:43:51', '2026-02-10 12:44:17'),
+(22, 15, 3, '2026-02-10', 'Santa Cruz, Bolivia', '2026-02-10 12:44:48', '2026-02-10 12:44:53'),
+(23, 22, 3, '2026-02-10', 'Quito, Ecuador', '2026-02-10 16:06:48', '2026-02-10 16:08:13'),
+(24, 11, 2, '2026-02-10', 'Bogotá, Colombia', '2026-02-10 16:22:24', '2026-02-10 16:23:00'),
+(25, 19, 3, '2026-02-10', 'mi casa', '2026-02-10 16:23:19', '2026-02-10 16:40:55');
 
 -- --------------------------------------------------------
 
@@ -339,8 +368,7 @@ INSERT INTO `permisos` (`id_permiso`, `nombre_permiso`, `descripcion`) VALUES
 (3, 'ver_pedidos', 'Acceso al módulo de Pedidos'),
 (4, 'ver_inventario', 'Acceso al módulo de Inventario'),
 (5, 'ver_reportes', 'Acceso al módulo de Reportes'),
-(6, 'ver_usuarios', 'Acceso al módulo de Gestión de Usuarios'),
-(7, 'ver_categorias', 'Acceso al módulo de Categorías de Productos');
+(6, 'ver_usuarios', 'Acceso al módulo de Gestión de Usuarios');
 
 -- --------------------------------------------------------
 
@@ -351,7 +379,6 @@ INSERT INTO `permisos` (`id_permiso`, `nombre_permiso`, `descripcion`) VALUES
 CREATE TABLE `productos` (
   `id_producto` int(11) NOT NULL,
   `nombre_producto` varchar(150) NOT NULL,
-  `id_categoria` int(11) NOT NULL,
   `precio` decimal(10,2) NOT NULL,
   `stock` int(11) NOT NULL DEFAULT 0,
   `fecha_creacion` datetime NOT NULL DEFAULT current_timestamp(),
@@ -363,14 +390,22 @@ CREATE TABLE `productos` (
 -- Volcado de datos para la tabla `productos`
 --
 
-INSERT INTO `productos` (`id_producto`, `nombre_producto`, `id_categoria`, `precio`, `stock`, `fecha_creacion`, `fecha_actualizacion`, `activo`) VALUES
-(1, 'MAIZ PIPOCA', 1, 123.00, 165, '2025-10-26 22:59:38', '2025-11-09 22:43:37', 1),
-(2, 'soya', 2, 120.00, 77, '2025-10-30 10:18:34', '2025-11-02 19:04:24', 1),
-(3, 'frijol', 2, 121.00, 27, '2025-10-30 14:40:23', '2026-02-03 21:01:35', 1),
-(4, 'garbanzo', 1, 120.00, 60, '2025-11-02 19:05:06', '2026-02-03 21:01:35', 1),
-(5, 'Chia', 3, 500.00, 400, '2025-11-09 23:14:49', '2026-02-03 21:00:17', 1),
-(6, 'chia 1ra', 1, 111.00, 200, '2026-02-03 21:02:59', '2026-02-03 21:02:59', 1),
-(7, 'chia 1ra', 1, 111.00, 200, '2026-02-03 21:03:09', '2026-02-03 21:03:09', 1);
+INSERT INTO `productos` (`id_producto`, `nombre_producto`, `precio`, `stock`, `fecha_creacion`, `fecha_actualizacion`, `activo`) VALUES
+(1, 'MAIZ PIPOCA', 123.00, 120, '2025-10-26 22:59:38', '2026-02-10 16:40:55', 1),
+(2, 'soya1', 120.00, 77, '2025-10-30 10:18:34', '2026-02-10 16:37:26', 0),
+(3, 'frijol', 121.00, 27, '2025-10-30 14:40:23', '2026-02-03 21:01:35', 1),
+(4, 'garbanzo', 120.00, 60, '2025-11-02 19:05:06', '2026-02-10 16:07:39', 1),
+(5, 'Chia', 500.00, 0, '2025-11-09 23:14:49', '2026-02-10 11:33:27', 1),
+(6, 'chia 1ra', 111.00, 100, '2026-02-03 21:02:59', '2026-02-10 16:08:13', 1),
+(7, 'chia 1ra', 111.00, 0, '2026-02-03 21:03:09', '2026-02-09 14:22:14', 1),
+(8, 'chia 2da', 100.00, 210, '2026-02-04 23:10:15', '2026-02-04 23:10:32', 0),
+(9, 'chia 3ra', 100.00, 90, '2026-02-10 11:11:03', '2026-02-10 16:22:52', 1),
+(10, 'chia 4ta', 100.00, 110, '2026-02-10 11:11:20', '2026-02-10 11:49:31', 1),
+(11, 'chia 5ta', 100.00, 210, '2026-02-10 11:11:34', '2026-02-10 11:11:34', 1),
+(12, 'chia 6ta', 100.00, 210, '2026-02-10 11:11:48', '2026-02-10 11:11:48', 1),
+(13, 'frijol amarillo', 100.00, 500, '2026-02-10 15:17:16', '2026-02-10 16:08:13', 1),
+(14, 'MAIZ PIPOCA 1', 123.00, 100, '2026-02-10 16:38:11', '2026-02-10 16:38:11', 1),
+(15, 'frijol amarillod', 100.00, 500, '2026-02-10 16:38:43', '2026-02-10 16:39:32', 1);
 
 -- --------------------------------------------------------
 
@@ -414,7 +449,6 @@ INSERT INTO `roles_permisos` (`id_rol`, `id_permiso`) VALUES
 (1, 4),
 (1, 5),
 (1, 6),
-(1, 7),
 (2, 1),
 (2, 2),
 (2, 3);
@@ -471,6 +505,7 @@ CREATE TABLE `usuarios` (
   `id_rol` int(11) NOT NULL,
   `nombre_usuario` varchar(100) NOT NULL,
   `contrasena` varchar(255) NOT NULL COMMENT 'ALMACENAR SIEMPRE COMO HASH (ej: bcrypt)',
+  `activo` tinyint(1) NOT NULL DEFAULT 1 COMMENT '1=Activo, 0=Inactivo',
   `fecha_creacion` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -478,10 +513,10 @@ CREATE TABLE `usuarios` (
 -- Volcado de datos para la tabla `usuarios`
 --
 
-INSERT INTO `usuarios` (`id_usuario`, `id_rol`, `nombre_usuario`, `contrasena`, `fecha_creacion`) VALUES
-(10, 1, 'admin', '$2y$10$6OXh37sQ6NqURkCyFw8BJu27phVgjRo.bYje6DSD3L2tLmhmIuFjq', '2025-10-26 23:54:49'),
-(18, 2, 'empleado', '$2y$10$.AkE6/bm0O20p/UcDF4.mOAAmGs9u66LDKJiVa4RISeVE/KNKY.Wq', '2025-11-09 22:10:47'),
-(19, 3, 'vendedor', '$2y$10$wtDpEOSLtj01uF5iR/Q0CeTsy0dhI4RFcfq.GMzy0GmYzkTNMcoXe', '2025-11-09 22:11:08');
+INSERT INTO `usuarios` (`id_usuario`, `id_rol`, `nombre_usuario`, `contrasena`, `activo`, `fecha_creacion`) VALUES
+(10, 1, 'admin', '$2y$10$6OXh37sQ6NqURkCyFw8BJu27phVgjRo.bYje6DSD3L2tLmhmIuFjq', 1, '2025-10-26 23:54:49'),
+(18, 2, 'empleado', '$2y$10$.AkE6/bm0O20p/UcDF4.mOAAmGs9u66LDKJiVa4RISeVE/KNKY.Wq', 1, '2025-11-09 22:10:47'),
+(19, 3, 'vendedor', '$2y$10$wtDpEOSLtj01uF5iR/Q0CeTsy0dhI4RFcfq.GMzy0GmYzkTNMcoXe', 1, '2025-11-09 22:11:08');
 
 -- --------------------------------------------------------
 
@@ -511,18 +546,16 @@ INSERT INTO `ventas` (`id_venta`, `id_pedido`, `id_metodo_pago`, `id_estado_pago
 (6, 10, 1, 2, '2025-11-09 22:33:25', 84000.00),
 (7, 11, 1, 2, '2025-11-09 22:39:27', 84400.00),
 (8, 12, 1, 2, '2025-11-09 22:43:42', 12300.00),
-(9, 13, 1, 2, '2026-02-03 21:00:26', 100000.00);
+(9, 13, 1, 2, '2026-02-03 21:00:26', 100000.00),
+(10, 16, 1, 2, '2026-02-09 14:22:27', 22200.00),
+(11, 17, 1, 2, '2026-02-10 11:34:32', 200000.00),
+(12, 19, 1, 2, '2026-02-10 11:48:44', 10000.00),
+(13, 21, 1, 2, '2026-02-10 12:44:17', 21100.00),
+(14, 24, 1, 2, '2026-02-10 16:23:00', 14300.00);
 
 --
 -- Índices para tablas volcadas
 --
-
---
--- Indices de la tabla `categorias_producto`
---
-ALTER TABLE `categorias_producto`
-  ADD PRIMARY KEY (`id_categoria`),
-  ADD UNIQUE KEY `nombre_categoria` (`nombre_categoria`);
 
 --
 -- Indices de la tabla `clientes`
@@ -605,7 +638,6 @@ ALTER TABLE `permisos`
 --
 ALTER TABLE `productos`
   ADD PRIMARY KEY (`id_producto`),
-  ADD KEY `fk_productos_categoria` (`id_categoria`),
   ADD KEY `idx_nombre_producto` (`nombre_producto`);
 
 --
@@ -658,40 +690,34 @@ ALTER TABLE `ventas`
 --
 
 --
--- AUTO_INCREMENT de la tabla `categorias_producto`
---
-ALTER TABLE `categorias_producto`
-  MODIFY `id_categoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
 -- AUTO_INCREMENT de la tabla `clientes`
 --
 ALTER TABLE `clientes`
-  MODIFY `id_cliente` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id_cliente` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT de la tabla `contactos_cliente`
 --
 ALTER TABLE `contactos_cliente`
-  MODIFY `id_contacto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id_contacto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_de_pedido`
 --
 ALTER TABLE `detalle_de_pedido`
-  MODIFY `id_detalle_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id_detalle_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_producto`
 --
 ALTER TABLE `detalle_producto`
-  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_venta`
 --
 ALTER TABLE `detalle_venta`
-  MODIFY `id_detalle_venta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id_detalle_venta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT de la tabla `estados_pago`
@@ -715,7 +741,7 @@ ALTER TABLE `metodos_pago`
 -- AUTO_INCREMENT de la tabla `pedidos`
 --
 ALTER TABLE `pedidos`
-  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT de la tabla `permisos`
@@ -727,7 +753,7 @@ ALTER TABLE `permisos`
 -- AUTO_INCREMENT de la tabla `productos`
 --
 ALTER TABLE `productos`
-  MODIFY `id_producto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id_producto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT de la tabla `roles`
@@ -757,7 +783,7 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de la tabla `ventas`
 --
 ALTER TABLE `ventas`
-  MODIFY `id_venta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id_venta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- Restricciones para tablas volcadas
@@ -802,12 +828,6 @@ ALTER TABLE `detalle_venta`
 ALTER TABLE `pedidos`
   ADD CONSTRAINT `fk_pedidos_cliente` FOREIGN KEY (`id_cliente`) REFERENCES `clientes` (`id_cliente`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_pedidos_estado` FOREIGN KEY (`id_estado_pedido`) REFERENCES `estados_pedido` (`id_estado_pedido`) ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `productos`
---
-ALTER TABLE `productos`
-  ADD CONSTRAINT `fk_productos_categoria` FOREIGN KEY (`id_categoria`) REFERENCES `categorias_producto` (`id_categoria`) ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `roles_permisos`
