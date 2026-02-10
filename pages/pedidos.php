@@ -137,18 +137,20 @@ function pagination_url($page_num, $search) {
                             <td class="px-6 py-4 text-xs"><?php echo e($pedido['fecha_actualizacion_fmt']); ?></td>
 
                             <td class="px-6 py-4 text-right flex justify-end space-x-2">
-                                <button class="view-order-btn flex items-center text-sm font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-400 px-3 py-1 rounded-lg"
-                                        data-id="<?php echo e($pedido['id_pedido']); ?>"
-                                        data-cliente-id="<?php echo e($pedido['id_cliente']); ?>"
-                                        data-cliente-nombre="<?php echo e(e($pedido['nombre_razon_social'])); ?>"
-                                        data-fecha="<?php echo e($pedido['fecha_cotizacion']); ?>"
-                                        data-direccion="<?php echo e(e($pedido['direccion_entrega'])); ?>"
-                                        data-estado="<?php echo e(e($pedido['estado'])); ?>">
-                                    <i data-lucide="eye" class="w-4 h-4 mr-1"></i> Ver
-                                </button>
+                                <?php if ($pedido['estado'] === 'Pendiente'): ?>
+                                    <!-- Botón Editar (Solo para Pendiente) -->
+                                    <button class="edit-order-btn flex items-center text-sm font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-400 px-3 py-1 rounded-lg"
+                                            data-id="<?php echo e($pedido['id_pedido']); ?>"
+                                            data-cliente-id="<?php echo e($pedido['id_cliente']); ?>"
+                                            data-cliente-nombre="<?php echo e(e($pedido['nombre_razon_social'])); ?>"
+                                            data-fecha="<?php echo e($pedido['fecha_cotizacion']); ?>"
+                                            data-direccion="<?php echo e(e($pedido['direccion_entrega'])); ?>"
+                                            data-estado="<?php echo e(e($pedido['estado'])); ?>">
+                                        <i data-lucide="pencil" class="w-4 h-4 mr-1"></i> Editar
+                                    </button>
 
-                                <?php if ($pedido['estado'] === 'Pendiente' || $pedido['estado'] === 'En Preparacion'): ?>
-                                    <form action="api/pedidos_actions.php" method="POST" class="inline deliver-form">
+                                    <!-- Botones de Acción (Solo para Pendiente) -->
+                                    <form action="api/pedidos_actions.php" method="POST" class="inline deliver-form ml-2">
                                         <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
                                         <input type="hidden" name="action" value="deliver">
                                         <input type="hidden" name="id" value="<?php echo e($pedido['id_pedido']); ?>">
@@ -157,7 +159,7 @@ function pagination_url($page_num, $search) {
                                         </button>
                                     </form>
                                    
-                                    <form action="api/pedidos_actions.php" method="POST" class="inline cancel-form">
+                                    <form action="api/pedidos_actions.php" method="POST" class="inline cancel-form ml-2">
                                         <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
                                         <input type="hidden" name="action" value="cancel">
                                         <input type="hidden" name="id" value="<?php echo e($pedido['id_pedido']); ?>">
@@ -165,6 +167,48 @@ function pagination_url($page_num, $search) {
                                             <i data-lucide="x-circle" class="w-4 h-4 mr-1"></i> Cancelar
                                         </button>
                                     </form>
+
+                                <?php elseif ($pedido['estado'] === 'En Preparacion'): ?>
+                                     <!-- En Preparación: Ver + Acciones -->
+                                    <button class="view-order-btn flex items-center text-sm font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-400 px-3 py-1 rounded-lg"
+                                            data-id="<?php echo e($pedido['id_pedido']); ?>"
+                                            data-cliente-id="<?php echo e($pedido['id_cliente']); ?>"
+                                            data-cliente-nombre="<?php echo e(e($pedido['nombre_razon_social'])); ?>"
+                                            data-fecha="<?php echo e($pedido['fecha_cotizacion']); ?>"
+                                            data-direccion="<?php echo e(e($pedido['direccion_entrega'])); ?>"
+                                            data-estado="<?php echo e(e($pedido['estado'])); ?>">
+                                        <i data-lucide="eye" class="w-4 h-4 mr-1"></i> Ver
+                                    </button>
+
+                                    <form action="api/pedidos_actions.php" method="POST" class="inline deliver-form ml-2">
+                                        <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="action" value="deliver">
+                                        <input type="hidden" name="id" value="<?php echo e($pedido['id_pedido']); ?>">
+                                        <button type="submit" class="flex items-center text-sm font-medium text-green-600 bg-green-100 hover:bg-green-200 dark:bg-green-900/50 dark:text-green-400 px-3 py-1 rounded-lg">
+                                            <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> Entregar
+                                        </button>
+                                    </form>
+                                   
+                                    <form action="api/pedidos_actions.php" method="POST" class="inline cancel-form ml-2">
+                                        <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="action" value="cancel">
+                                        <input type="hidden" name="id" value="<?php echo e($pedido['id_pedido']); ?>">
+                                        <button type="submit" class="flex items-center text-sm font-medium text-red-600 bg-red-100 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-400 px-3 py-1 rounded-lg">
+                                            <i data-lucide="x-circle" class="w-4 h-4 mr-1"></i> Cancelar
+                                        </button>
+                                    </form>
+
+                                <?php else: ?>
+                                    <!-- Otros estados (Entregado, Cancelado): Solo Ver -->
+                                    <button class="view-order-btn flex items-center text-sm font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-400 px-3 py-1 rounded-lg"
+                                            data-id="<?php echo e($pedido['id_pedido']); ?>"
+                                            data-cliente-id="<?php echo e($pedido['id_cliente']); ?>"
+                                            data-cliente-nombre="<?php echo e(e($pedido['nombre_razon_social'])); ?>"
+                                            data-fecha="<?php echo e($pedido['fecha_cotizacion']); ?>"
+                                            data-direccion="<?php echo e(e($pedido['direccion_entrega'])); ?>"
+                                            data-estado="<?php echo e(e($pedido['estado'])); ?>">
+                                        <i data-lucide="eye" class="w-4 h-4 mr-1"></i> Ver
+                                    </button>
                                 <?php endif; ?>
                             </td>
                         </tr>

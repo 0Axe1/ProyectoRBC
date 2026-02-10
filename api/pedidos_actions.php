@@ -192,12 +192,14 @@ try {
         $pdo->commit();
         echo json_encode(['status' => 'success', 'message' => 'Pedido creado exitosamente.']);
 
-    // --- ACTUALIZAR UN PEDIDO (SOLO DATOS GENERALES) ---
+    // --- ACTUALIZAR UN PEDIDO (DATOS GENERALES Y PRODUCTOS) ---
     } elseif ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $id_pedido = filter_input(INPUT_POST, 'id_pedido', FILTER_VALIDATE_INT);
         $id_cliente = filter_input(INPUT_POST, 'id_cliente', FILTER_VALIDATE_INT);
         $fecha_cotizacion = $_POST['fecha_cotizacion'] ?? null;
         $direccion_entrega = trim($_POST['direccion_entrega'] ?? '');
+        $detalle_json = $_POST['detalle_pedido'] ?? '[]';
+        $detalle_pedido = json_decode($detalle_json, true);
         $ID_ESTADO_PENDIENTE = 1;
 
         if (empty($id_pedido)) {
@@ -209,32 +211,82 @@ try {
         if (empty($fecha_cotizacion)) {
             throw new Exception('Debe seleccionar una fecha de cotización.', 400);
         }
-        // Validación de formato de fecha
         if (!DateTime::createFromFormat('Y-m-d', $fecha_cotizacion)) {
             throw new Exception('Formato de fecha de cotización no válido.', 400);
         }
-        // Validación: la fecha de cotización no debe ser futura
         if (strtotime($fecha_cotizacion) > strtotime(date('Y-m-d'))) {
             throw new Exception('La fecha de cotización no puede ser futura.', 400);
         }
-
-        // Validación de dirección de entrega
         if (empty($direccion_entrega)) {
             throw new Exception('La dirección de entrega es obligatoria.', 400);
         }
         if (strlen($direccion_entrega) < 5 || strlen($direccion_entrega) > 255) {
             throw new Exception('La dirección de entrega debe tener entre 5 y 255 caracteres.', 400);
         }
+        if (empty($detalle_pedido) || !is_array($detalle_pedido)) {
+            throw new Exception('Debe haber al menos un producto en el pedido.', 400);
+        }
 
+        $pdo->beginTransaction();
+
+        // 1. Verificar si el pedido existe y es editable
+        $check_sql = "SELECT id_pedido FROM pedidos WHERE id_pedido = ? AND id_estado_pedido = ?";
+        $check_stmt = $pdo->prepare($check_sql);
+        $check_stmt->execute([$id_pedido, $ID_ESTADO_PENDIENTE]);
+        if (!$check_stmt->fetch()) {
+             throw new Exception('El pedido no existe o ya no está en estado "Pendiente".', 400);
+        }
+
+        // 2. Actualizar Cabecera
         $sql = "UPDATE pedidos SET id_cliente = ?, fecha_cotizacion = ?, direccion_entrega = ? 
-                WHERE id_pedido = ? AND id_estado_pedido = ?";
+                WHERE id_pedido = ?";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$id_cliente, $fecha_cotizacion, $direccion_entrega, $id_pedido, $ID_ESTADO_PENDIENTE]);
+        $stmt->execute([$id_cliente, $fecha_cotizacion, $direccion_entrega, $id_pedido]);
 
-        if ($stmt->rowCount() === 0) {
-            throw new Exception('No se pudo actualizar el pedido. Es posible que ya no esté en estado "Pendiente", no se encontraron cambios o el pedido no existe.', 404);
+        // 3. Gestionar Detalles y Stock
+
+        // A. Restaurar Stock de los items viejos
+        $old_details_stmt = $pdo->prepare("SELECT id_producto, cantidad_pedido FROM detalle_de_pedido WHERE id_pedido = ?");
+        $old_details_stmt->execute([$id_pedido]);
+        $old_details = $old_details_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $restore_stock_stmt = $pdo->prepare("UPDATE productos SET stock = stock + ? WHERE id_producto = ?");
+        foreach ($old_details as $old_item) {
+            $restore_stock_stmt->execute([$old_item['cantidad_pedido'], $old_item['id_producto']]);
+        }
+
+        // B. Eliminar detalles viejos
+        $delete_details_stmt = $pdo->prepare("DELETE FROM detalle_de_pedido WHERE id_pedido = ?");
+        $delete_details_stmt->execute([$id_pedido]);
+
+        // C. Insertar nuevos detalles y descontar stock
+        $detalle_stmt = $pdo->prepare("INSERT INTO detalle_de_pedido (id_pedido, id_producto, cantidad_pedido, precio_unitario, precio_total_cotizado) VALUES (?, ?, ?, ?, ?)");
+        $stock_stmt = $pdo->prepare("UPDATE productos SET stock = stock - ? WHERE id_producto = ? AND stock >= ?");
+        
+        foreach ($detalle_pedido as $item) {
+            $id_producto = filter_var($item['id'], FILTER_VALIDATE_INT);
+            $cantidad = filter_var($item['cantidad'], FILTER_VALIDATE_INT);
+            $precio = filter_var($item['precio'], FILTER_VALIDATE_FLOAT);
+            
+            if (!$id_producto || !$cantidad || !$precio || $cantidad <= 0 || $precio <= 0) {
+                 throw new Exception('Detalle de producto no válido (ID, cantidad o precio).', 400);
+            }
+            $subtotal = $cantidad * $precio;
+
+            // Verificar stock
+            $stock_stmt->execute([$cantidad, $id_producto, $cantidad]);
+            if ($stock_stmt->rowCount() === 0) {
+                // Obtenemos nombre para el error
+                $prod_stmt = $pdo->prepare("SELECT nombre_producto FROM productos WHERE id_producto = ?");
+                $prod_stmt->execute([$id_producto]);
+                $prod_nombre = $prod_stmt->fetchColumn() ?? 'ID ' . $id_producto;
+                throw new Exception("Stock insuficiente para el producto: " . $prod_nombre, 400);
+            }
+            
+            $detalle_stmt->execute([$id_pedido, $id_producto, $cantidad, $precio, $subtotal]);
         }
         
+        $pdo->commit();
         echo json_encode(['status' => 'success', 'message' => 'Pedido actualizado exitosamente.']);
 
     // --- MARCAR PEDIDO COMO ENTREGADO ---

@@ -422,13 +422,77 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // --- Enviar Formulario (SOLO CREAR) ---
+
+    // --- Lógica para "EDITAR" Pedido ---
+    // Usamos delegación de eventos o asignamos a los botones existentes
+    // Como los botones se Renderizan en PHP, podemos asignar directamente o usar delegación si fuera ajax.
+    // Aqui asignamos directo.
+    document.querySelectorAll('.edit-order-btn').forEach(button => {
+        button.addEventListener('click', async () => {
+            const id = button.dataset.id;
+            orderForm.reset();
+            modalTitle.textContent = 'Editar Pedido #' + id;
+            submitBtn.textContent = 'Actualizar Pedido';
+            formAction.value = 'update';
+            formOrderId.value = id;
+
+            // Reset search fields
+            if (productoSearch) productoSearch.value = '';
+            if (idProductoSeleccionado) idProductoSeleccionado.value = '';
+            currentSelectedProduct = null;
+
+            // Habilitar secciones para editar
+            addItemSection.classList.remove('hidden');
+            submitBtn.classList.remove('hidden');
+            cancelBtn.classList.remove('hidden');
+            viewModeStatus.classList.add('hidden');
+
+            // Habilitar inputs
+            clienteSelect.disabled = false;
+            fechaInput.disabled = false;
+            direccionInput.disabled = false;
+
+            // Pre-llenar datos de cabecera
+            if (clientesDisponibles.length === 0) {
+                await fetchFormData();
+            }
+            // Pequeño delay para asegurar que el select se llenó
+            setTimeout(() => {
+                clienteSelect.value = button.dataset.clienteId;
+            }, 100);
+
+            fechaInput.value = button.dataset.fecha;
+            direccionInput.value = button.dataset.direccion;
+
+            try {
+                const response = await fetch(`api/pedidos_actions.php?action=get_order_details&id=${id}`);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Error al cargar detalles');
+
+                detallePedido = data.details.map(item => ({
+                    id: item.id_producto,
+                    nombre: item.nombre_producto,
+                    cantidad: parseInt(item.cantidad_pedido),
+                    precio: parseFloat(item.precio_unitario)
+                }));
+
+                renderDetalle(true); // Renderizar CON botones de eliminar (Editable)
+
+            } catch (error) {
+                showModalError(`No se pudieron cargar los detalles del pedido: ${error.message}`);
+            }
+
+            openModal();
+        });
+    });
+
+    // --- Enviar Formulario (CREAR / EDITAR) ---
     if (orderForm) {
         orderForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const action = formAction.value;
-            if (action !== 'create') return;
+            if (action !== 'create' && action !== 'update') return;
 
             modalMessageContainer.innerHTML = '';
 
@@ -485,7 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showModalError(error.message);
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Crear Pedido';
+                submitBtn.textContent = (action === 'update') ? 'Actualizar Pedido' : 'Crear Pedido';
             }
         });
     }
