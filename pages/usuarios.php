@@ -1,5 +1,5 @@
 <?php
-// ... (toda la lógica PHP de mensajes y consultas) ...
+// pages/usuarios.php
 $mensaje = '';
 if (isset($_GET['success'])) {
     $codigos_exito = [
@@ -32,6 +32,7 @@ $sql_usuarios = "SELECT
                      WHERE rp.id_rol = u.id_rol) as permisos_lista
                  FROM usuarios u
                  JOIN roles r ON u.id_rol = r.id_rol
+                 WHERE u.activo = 1
                  ORDER BY u.nombre_usuario ASC";
 $resultado = $pdo->query($sql_usuarios);
 
@@ -63,7 +64,7 @@ $roles = $roles_result->fetchAll(PDO::FETCH_ASSOC);
             <tbody>
                 <?php if ($resultado && $resultado->rowCount() > 0) : ?>
                     <?php while($usuario = $resultado->fetch(PDO::FETCH_ASSOC)): ?>
-                        <tr class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                        <tr class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
                             <td class="px-6 py-4 font-medium text-gray-900 dark:text-white"><?php echo e($usuario['nombre_usuario']); ?></td>
                             <td class="px-6 py-4"><?php echo e($usuario['nombre_rol']); ?></td>
                             <td class="px-6 py-4 text-xs italic"><?php echo e($usuario['permisos_lista'] ?? 'Sin permisos asignados al rol'); ?></td>
@@ -74,29 +75,44 @@ $roles = $roles_result->fetchAll(PDO::FETCH_ASSOC);
                                     data-id-rol="<?php echo e($usuario['id_rol']); ?>">
                                     <i data-lucide="edit" class="w-4 h-4 mr-1"></i> Editar
                                 </button>
-                               
+                                
                                 <form action="api/usuarios_actions.php" method="POST" class="inline delete-form">
                                     <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="id" value="<?php echo e($usuario['id_usuario']); ?>">
                                     <button type="submit" class="flex items-center text-sm font-medium text-red-600 hover:text-red-800 bg-red-100 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-400 dark:hover:bg-red-900/80 px-3 py-1 rounded-lg">
-                                        <i data-lucide="trash-2" class="w-4 h-4 mr-1"></i> Eliminar
+                                        <i data-lucide="trash-2" class="w-4 h-4 mr-1"></i> Deshabilitar
                                     </button>
                                 </form>
                             </td>
                         </tr>
                     <?php endwhile; ?>
+                <?php else : ?>
+                    <tr>
+                        <td colspan="4" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center justify-center space-y-3">
+                                <div class="bg-gray-100 dark:bg-gray-700 rounded-full p-4">
+                                    <i data-lucide="users" class="w-10 h-10 text-gray-400 dark:text-gray-500"></i>
+                                </div>
+                                <p class="text-gray-500 dark:text-gray-400 font-medium">No hay usuarios registrados.</p>
+                                <p class="text-sm text-gray-400 dark:text-gray-500">Comience agregando un nuevo usuario.</p>
+                            </div>
+                        </td>
+                    </tr>
                 <?php endif; ?>
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- MODAL PARA USUARIOS (MIGRADO) -->
-<div id="user-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 dark:bg-opacity-80 flex items-center justify-center hidden z-30">
+<!-- MODAL PARA USUARIOS -->
+<div id="user-modal" class="fixed inset-0 bg-gray-900/50 dark:bg-gray-900/80 backdrop-blur-sm flex items-center justify-center hidden z-30">
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-lg">
+        <div class="flex justify-between items-center mb-6">
+            <h4 id="modal-title" class="text-2xl font-bold text-gray-800 dark:text-gray-100"></h4>
+            <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
+        </div>
         <form id="user-form" action="api/usuarios_actions.php" method="POST">
-            <h4 id="modal-title" class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6"></h4>
             <div id="modal-message-container"></div>
            
             <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
@@ -106,7 +122,7 @@ $roles = $roles_result->fetchAll(PDO::FETCH_ASSOC);
             <div class="space-y-4">
                 <div>
                     <label for="nombre_usuario" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre de Usuario *</label>
-                    <input type="text" id="nombre_usuario" name="nombre_usuario" required class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <input type="text" id="nombre_usuario" name="nombre_usuario" required minlength="3" maxlength="50" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                 </div>
                 <div>
                     <label for="id_rol" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol *</label>
@@ -120,17 +136,17 @@ $roles = $roles_result->fetchAll(PDO::FETCH_ASSOC);
                     </select>
                 </div>
                 <div>
-                    <label for="contrasena" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña</label>
-                    <input type="password" id="contrasena" name="contrasena" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <label for="contrasena" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Contraseña <span id="password-required-mark" class="hidden">*</span>
+                    </label>
+                    <input type="password" id="contrasena" name="contrasena" minlength="6" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                     <small id="password-help" class="text-xs text-gray-500 dark:text-gray-400">Dejar en blanco para no cambiar la contraseña existente.</small>
                 </div>
             </div>
-            <div class="flex justify-end space-x-4 mt-8">
+            <div class="flex justify-end space-x-4 mt-8 pt-4 border-t dark:border-gray-700">
                 <button type="button" id="cancel-btn" class="px-6 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-500">Cancelar</button>
                 <button type="submit" id="submit-btn" class="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"></button>
             </div>
         </form>
     </div>
 </div>
-<script src="https://unpkg.com/lucide@latest"></script>
-<!-- ¡CAMBIO! SCRIPT ELIMINADO -->

@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const formAction = document.getElementById('form-action');
     const formClientId = document.getElementById('form-client-id');
     const submitBtn = document.getElementById('submit-btn');
-    
+
     // Contenedores de mensajes
     const messageContainer = document.getElementById('message-container');
     const modalMessageContainer = document.getElementById('modal-message-container');
@@ -29,7 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const isValidPhone = (phone) => {
-        const re = /^[0-9]{7,15}$/; // Acepta de 7 a 15 dígitos
+        // Permite números, espacios, guiones y paréntesis. longitud 7-20
+        const re = /^[0-9\s\-\(\)]{7,20}$/;
         return re.test(String(phone));
     };
 
@@ -42,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
             formAction.value = 'create';
             formClientId.value = '';
             modalMessageContainer.innerHTML = ''; // Limpiar mensajes del modal
-            
+
             // Limpiar campos específicos
             if (telefonoContactoInput) telefonoContactoInput.value = '';
             if (emailContactoInput) emailContactoInput.value = '';
@@ -58,17 +59,17 @@ document.addEventListener('DOMContentLoaded', () => {
             modalTitle.textContent = 'Editar Cliente';
             submitBtn.textContent = 'Actualizar Cliente';
             formAction.value = 'update';
-            
+
             // Llenar datos desde atributos data-*
             formClientId.value = button.dataset.id;
             document.getElementById('nombre_razon_social').value = button.dataset.nombre;
             document.getElementById('ubicacion').value = button.dataset.ubicacion;
             document.getElementById('nit_ruc').value = button.dataset.nit;
-            
+
             // Llenar campos específicos
             if (telefonoContactoInput) telefonoContactoInput.value = button.dataset.telefono || '';
             if (emailContactoInput) emailContactoInput.value = button.dataset.email || '';
-            
+
             modalMessageContainer.innerHTML = ''; // Limpiar mensajes del modal
             openModal();
         });
@@ -87,21 +88,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (clientForm) {
         clientForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             // --- ¡NUEVO! Validaciones Frontend ---
             modalMessageContainer.innerHTML = ''; // Limpiar mensajes previos
-            
+
             const telefonoValue = telefonoContactoInput ? telefonoContactoInput.value : '';
             const emailValue = emailContactoInput ? emailContactoInput.value : '';
-            
+
             if (telefonoValue && !isValidPhone(telefonoValue)) {
                 if (typeof window.showMessage === 'function') {
-                    window.showMessage('El teléfono debe contener solo números, entre 7 y 15 dígitos.', 'error', 'modal-message-container');
+                    window.showMessage('El teléfono debe tener entre 7 y 20 caracteres y puede contener espacios, guiones o paréntesis.', 'error', 'modal-message-container');
                 }
                 telefonoContactoInput.focus();
                 return;
             }
-            
+
             if (emailValue && !isValidEmail(emailValue)) {
                 if (typeof window.showMessage === 'function') {
                     window.showMessage('Por favor, introduce un formato de email válido (ej: usuario@correo.com).', 'error', 'modal-message-container');
@@ -113,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const action = formAction.value;
             const submitText = (action === 'create') ? 'Guardar Cliente' : 'Actualizar Cliente';
-            
+
             submitBtn.disabled = true;
             submitBtn.textContent = 'Guardando...';
 
@@ -135,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (typeof window.showMessage === 'function') {
                     window.showMessage(result.message, 'success', 'message-container');
                 }
-                
+
                 // Recargar la página para ver los cambios.
                 setTimeout(() => {
                     location.reload();

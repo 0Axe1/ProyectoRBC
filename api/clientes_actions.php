@@ -64,8 +64,15 @@ $nombre = trim($_POST['nombre_razon_social'] ?? '');
 $ubicacion = trim($_POST['ubicacion'] ?? '');
 $nit_ruc = trim($_POST['nit_ruc'] ?? '') ?: null;
 $id_cliente = filter_var($_POST['id_cliente'] ?? $_POST['id'] ?? null, FILTER_VALIDATE_INT);
-$telefono_contacto = trim($_POST['telefono_contacto'] ?? '') ?: null;
-$email_contacto = trim($_POST['email_contacto'] ?? '') ?: null;
+
+// --- 1. SANITIZACIÓN ROBUSTA --
+// Limpiar teléfono: quitar todo lo que no sea número
+$telefono_raw = $_POST['telefono_contacto'] ?? '';
+$telefono_contacto = preg_replace('/[^0-9]/', '', $telefono_raw);
+$telefono_contacto = $telefono_contacto ?: null;
+
+// Limpiar Email
+$email_contacto = trim(strtolower($_POST['email_contacto'] ?? '')) ?: null;
 $id_terminos_pago_default = 1;
 
 try {
@@ -73,8 +80,9 @@ try {
         if (empty($nombre) || empty($ubicacion)) {
             throw new Exception('El Nombre y la Ubicación son obligatorios.');
         }
+        // Validar longitud del teléfono DESPUÉS de limpiar
         if (!empty($telefono_contacto) && !preg_match('/^[0-9]{7,15}$/', $telefono_contacto)) {
-            throw new Exception('El teléfono debe contener solo números (entre 7 y 15 dígitos).');
+            throw new Exception('El teléfono debe tener entre 7 y 15 dígitos numéricos.');
         }
         if (!empty($email_contacto) && !filter_var($email_contacto, FILTER_VALIDATE_EMAIL)) {
             throw new Exception('El formato del email no es válido.');
@@ -82,11 +90,21 @@ try {
     }
 
     if ($action === 'create') {
-        $sql_check = "SELECT id_cliente FROM clientes WHERE (nombre_razon_social = ? OR (nit_ruc IS NOT NULL AND nit_ruc = ?)) AND estado = 1";
-        $stmt_check = $pdo->prepare($sql_check);
-        $stmt_check->execute([$nombre, $nit_ruc]);
-        if ($stmt_check->fetch()) {
-            throw new Exception('Ya existe un cliente con el mismo Nombre o NIT/RUC.');
+        // --- 2. VALIDACIÓN DE DUPLICADOS ESPECÍFICA ---
+        // Verificar Nombre
+        $stmt_check_name = $pdo->prepare("SELECT id_cliente FROM clientes WHERE nombre_razon_social = ? AND estado = 1");
+        $stmt_check_name->execute([$nombre]);
+        if ($stmt_check_name->fetch()) {
+            throw new Exception('Ya existe un cliente con el Nombre/Razón Social provisional: "' . $nombre . '".');
+        }
+
+        // Verificar NIT/RUC (si no es nulo)
+        if ($nit_ruc) {
+            $stmt_check_nit = $pdo->prepare("SELECT id_cliente FROM clientes WHERE nit_ruc = ? AND estado = 1");
+            $stmt_check_nit->execute([$nit_ruc]);
+            if ($stmt_check_nit->fetch()) {
+                throw new Exception('Ya existe un cliente con el NIT/RUC: "' . $nit_ruc . '".');
+            }
         }
 
         $pdo->beginTransaction();
@@ -96,21 +114,18 @@ try {
         $stmt_cliente->execute([$nombre, $nit_ruc, $ubicacion, $id_terminos_pago_default]);
         $new_cliente_id = $pdo->lastInsertId();
 
+        // --- 3. MANEJO ROBUSTO DE TIPOS DE CONTACTO (Case-insensitive) ---
         if (!empty($telefono_contacto)) {
-            $stmt_tipo_tel = $pdo->query("SELECT id_tipo_contacto FROM tipos_contacto WHERE nombre_tipo = 'Telefono'")->fetch(PDO::FETCH_ASSOC);
+            $stmt_tipo_tel = $pdo->query("SELECT id_tipo_contacto FROM tipos_contacto WHERE LOWER(nombre_tipo) LIKE '%telefono%' LIMIT 1")->fetch(PDO::FETCH_ASSOC);
             if ($stmt_tipo_tel) {
                 handleContactUpdate($pdo, $new_cliente_id, $stmt_tipo_tel['id_tipo_contacto'], $telefono_contacto);
-            } else {
-                 throw new Exception('Tipo de contacto "Teléfono" no encontrado en la base de datos.');
             }
         }
 
         if (!empty($email_contacto)) {
-            $stmt_tipo_email = $pdo->query("SELECT id_tipo_contacto FROM tipos_contacto WHERE nombre_tipo = 'Email'")->fetch(PDO::FETCH_ASSOC);
+            $stmt_tipo_email = $pdo->query("SELECT id_tipo_contacto FROM tipos_contacto WHERE LOWER(nombre_tipo) LIKE '%email%' LIMIT 1")->fetch(PDO::FETCH_ASSOC);
              if ($stmt_tipo_email) {
                 handleContactUpdate($pdo, $new_cliente_id, $stmt_tipo_email['id_tipo_contacto'], $email_contacto);
-            } else {
-                 throw new Exception('Tipo de contacto "Email" no encontrado en la base de datos.');
             }
         }
         
@@ -118,11 +133,21 @@ try {
         echo json_encode(['status' => 'success', 'message' => 'Cliente agregado exitosamente.']);
 
     } elseif ($action === 'update' && $id_cliente) {
-        $sql_check = "SELECT id_cliente FROM clientes WHERE (nombre_razon_social = ? OR (nit_ruc IS NOT NULL AND nit_ruc = ?)) AND id_cliente != ? AND estado = 1";
-        $stmt_check = $pdo->prepare($sql_check);
-        $stmt_check->execute([$nombre, $nit_ruc, $id_cliente]);
-        if ($stmt_check->fetch()) {
-            throw new Exception('Ya existe otro cliente con el mismo Nombre o NIT/RUC.');
+        // --- VALIDACIÓN DE DUPLICADOS EN ACTUALIZACIÓN ---
+        // Verificar Nombre (excluyendo el actual)
+        $stmt_check_name = $pdo->prepare("SELECT id_cliente FROM clientes WHERE nombre_razon_social = ? AND id_cliente != ? AND estado = 1");
+        $stmt_check_name->execute([$nombre, $id_cliente]);
+        if ($stmt_check_name->fetch()) {
+             throw new Exception('Ya existe otro cliente con el Nombre: "' . $nombre . '".');
+        }
+
+        // Verificar NIT/RUC (excluyendo el actual)
+        if ($nit_ruc) {
+            $stmt_check_nit = $pdo->prepare("SELECT id_cliente FROM clientes WHERE nit_ruc = ? AND id_cliente != ? AND estado = 1");
+            $stmt_check_nit->execute([$nit_ruc, $id_cliente]);
+            if ($stmt_check_nit->fetch()) {
+                throw new Exception('Ya existe otro cliente con el NIT/RUC: "' . $nit_ruc . '".');
+            }
         }
         
         $pdo->beginTransaction();
@@ -131,13 +156,16 @@ try {
         $stmt_cliente = $pdo->prepare($sql_cliente);
         $stmt_cliente->execute([$nombre, $nit_ruc, $ubicacion, $id_cliente]);
         
-        $id_tipo_telefono = $pdo->query("SELECT id_tipo_contacto FROM tipos_contacto WHERE nombre_tipo = 'Telefono'")->fetchColumn();
-        if (!$id_tipo_telefono) throw new Exception('Tipo de contacto "Teléfono" no encontrado.');
-        handleContactUpdate($pdo, $id_cliente, $id_tipo_telefono, $telefono_contacto);
+        // Manejo robusto de contactos
+        $id_tipo_telefono = $pdo->query("SELECT id_tipo_contacto FROM tipos_contacto WHERE LOWER(nombre_tipo) LIKE '%telefono%' LIMIT 1")->fetchColumn();
+        if ($id_tipo_telefono) {
+            handleContactUpdate($pdo, $id_cliente, $id_tipo_telefono, $telefono_contacto);
+        }
 
-        $id_tipo_email = $pdo->query("SELECT id_tipo_contacto FROM tipos_contacto WHERE nombre_tipo = 'Email'")->fetchColumn();
-        if (!$id_tipo_email) throw new Exception('Tipo de contacto "Email" no encontrado.');
-        handleContactUpdate($pdo, $id_cliente, $id_tipo_email, $email_contacto);
+        $id_tipo_email = $pdo->query("SELECT id_tipo_contacto FROM tipos_contacto WHERE LOWER(nombre_tipo) LIKE '%email%' LIMIT 1")->fetchColumn();
+        if ($id_tipo_email) {
+            handleContactUpdate($pdo, $id_cliente, $id_tipo_email, $email_contacto);
+        }
         
         $pdo->commit();
         echo json_encode(['status' => 'success', 'message' => 'Cliente actualizado exitosamente.']);

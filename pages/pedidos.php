@@ -104,16 +104,25 @@ function pagination_url($page_num, $search) {
 
     <div class="overflow-x-auto">
         <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-            <thead class="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700">
+            <thead class="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b dark:border-gray-600">
                 <tr>
-                    <th scope="col" class="px-6 py-3">ID</th>
-                    <th scope="col" class="px-6 py-3">Cliente</th>
-                    <th scope="col" class="px-6 py-3">Fecha Cotiz.</th>
-                    <th scope="col" class="px-6 py-3">Total</th>
-                    <th scope="col" class="px-6 py-3">Estado</th>
-                    <th scope="col" class="px-6 py-3">Creado</th>
-                    <th scope="col" class="px-6 py-3">Actualizado</th>
-                    <th scope="col" class="px-6 py-3 text-right">Acciones</th>
+                    <th scope="col" class="px-6 py-4 font-semibold">ID</th>
+                    <th scope="col" class="px-6 py-4 font-semibold">
+                        <i data-lucide="user" class="w-4 h-4 inline-block mr-1 opacity-70"></i>
+                        Cliente
+                    </th>
+                    <th scope="col" class="px-6 py-4 font-semibold">
+                        <i data-lucide="calendar" class="w-4 h-4 inline-block mr-1 opacity-70"></i>
+                        Fecha Cotiz.
+                    </th>
+                    <th scope="col" class="px-6 py-4 font-semibold">
+                        <i data-lucide="dollar-sign" class="w-4 h-4 inline-block mr-1 opacity-70"></i>
+                        Total
+                    </th>
+                    <th scope="col" class="px-6 py-4 font-semibold">Estado</th>
+                    <th scope="col" class="px-6 py-4 font-semibold">Creado</th>
+                    <th scope="col" class="px-6 py-4 font-semibold">Actualizado</th>
+                    <th scope="col" class="px-6 py-4 text-right font-semibold">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -137,18 +146,20 @@ function pagination_url($page_num, $search) {
                             <td class="px-6 py-4 text-xs"><?php echo e($pedido['fecha_actualizacion_fmt']); ?></td>
 
                             <td class="px-6 py-4 text-right flex justify-end space-x-2">
-                                <button class="view-order-btn flex items-center text-sm font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-400 px-3 py-1 rounded-lg"
-                                        data-id="<?php echo e($pedido['id_pedido']); ?>"
-                                        data-cliente-id="<?php echo e($pedido['id_cliente']); ?>"
-                                        data-cliente-nombre="<?php echo e(e($pedido['nombre_razon_social'])); ?>"
-                                        data-fecha="<?php echo e($pedido['fecha_cotizacion']); ?>"
-                                        data-direccion="<?php echo e(e($pedido['direccion_entrega'])); ?>"
-                                        data-estado="<?php echo e(e($pedido['estado'])); ?>">
-                                    <i data-lucide="eye" class="w-4 h-4 mr-1"></i> Ver
-                                </button>
+                                <?php if ($pedido['estado'] === 'Pendiente'): ?>
+                                    <!-- Botón Editar (Solo para Pendiente) -->
+                                    <button class="edit-order-btn flex items-center text-sm font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-400 px-3 py-1 rounded-lg"
+                                            data-id="<?php echo e($pedido['id_pedido']); ?>"
+                                            data-cliente-id="<?php echo e($pedido['id_cliente']); ?>"
+                                            data-cliente-nombre="<?php echo e(e($pedido['nombre_razon_social'])); ?>"
+                                            data-fecha="<?php echo e($pedido['fecha_cotizacion']); ?>"
+                                            data-direccion="<?php echo e(e($pedido['direccion_entrega'])); ?>"
+                                            data-estado="<?php echo e(e($pedido['estado'])); ?>">
+                                        <i data-lucide="pencil" class="w-4 h-4 mr-1"></i> Editar
+                                    </button>
 
-                                <?php if ($pedido['estado'] === 'Pendiente' || $pedido['estado'] === 'En Preparacion'): ?>
-                                    <form action="api/pedidos_actions.php" method="POST" class="inline deliver-form">
+                                    <!-- Botones de Acción (Solo para Pendiente) -->
+                                    <form action="api/pedidos_actions.php" method="POST" class="inline deliver-form ml-2">
                                         <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
                                         <input type="hidden" name="action" value="deliver">
                                         <input type="hidden" name="id" value="<?php echo e($pedido['id_pedido']); ?>">
@@ -157,7 +168,7 @@ function pagination_url($page_num, $search) {
                                         </button>
                                     </form>
                                    
-                                    <form action="api/pedidos_actions.php" method="POST" class="inline cancel-form">
+                                    <form action="api/pedidos_actions.php" method="POST" class="inline cancel-form ml-2">
                                         <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
                                         <input type="hidden" name="action" value="cancel">
                                         <input type="hidden" name="id" value="<?php echo e($pedido['id_pedido']); ?>">
@@ -165,14 +176,72 @@ function pagination_url($page_num, $search) {
                                             <i data-lucide="x-circle" class="w-4 h-4 mr-1"></i> Cancelar
                                         </button>
                                     </form>
+
+                                <?php elseif ($pedido['estado'] === 'En Preparacion'): ?>
+                                     <!-- En Preparación: Ver + Acciones -->
+                                    <button class="view-order-btn flex items-center text-sm font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-400 px-3 py-1 rounded-lg"
+                                            data-id="<?php echo e($pedido['id_pedido']); ?>"
+                                            data-cliente-id="<?php echo e($pedido['id_cliente']); ?>"
+                                            data-cliente-nombre="<?php echo e(e($pedido['nombre_razon_social'])); ?>"
+                                            data-fecha="<?php echo e($pedido['fecha_cotizacion']); ?>"
+                                            data-direccion="<?php echo e(e($pedido['direccion_entrega'])); ?>"
+                                            data-estado="<?php echo e(e($pedido['estado'])); ?>">
+                                        <i data-lucide="eye" class="w-4 h-4 mr-1"></i> Ver
+                                    </button>
+
+                                    <form action="api/pedidos_actions.php" method="POST" class="inline deliver-form ml-2">
+                                        <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="action" value="deliver">
+                                        <input type="hidden" name="id" value="<?php echo e($pedido['id_pedido']); ?>">
+                                        <button type="submit" class="flex items-center text-sm font-medium text-green-600 bg-green-100 hover:bg-green-200 dark:bg-green-900/50 dark:text-green-400 px-3 py-1 rounded-lg">
+                                            <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> Entregar
+                                        </button>
+                                    </form>
+                                   
+                                    <form action="api/pedidos_actions.php" method="POST" class="inline cancel-form ml-2">
+                                        <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="action" value="cancel">
+                                        <input type="hidden" name="id" value="<?php echo e($pedido['id_pedido']); ?>">
+                                        <button type="submit" class="flex items-center text-sm font-medium text-red-600 bg-red-100 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-400 px-3 py-1 rounded-lg">
+                                            <i data-lucide="x-circle" class="w-4 h-4 mr-1"></i> Cancelar
+                                        </button>
+                                    </form>
+
+                                <?php else: ?>
+                                    <!-- Otros estados (Entregado, Cancelado): Solo Ver -->
+                                    <button class="view-order-btn flex items-center text-sm font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-400 px-3 py-1 rounded-lg"
+                                            data-id="<?php echo e($pedido['id_pedido']); ?>"
+                                            data-cliente-id="<?php echo e($pedido['id_cliente']); ?>"
+                                            data-cliente-nombre="<?php echo e(e($pedido['nombre_razon_social'])); ?>"
+                                            data-fecha="<?php echo e($pedido['fecha_cotizacion']); ?>"
+                                            data-direccion="<?php echo e(e($pedido['direccion_entrega'])); ?>"
+                                            data-estado="<?php echo e(e($pedido['estado'])); ?>">
+                                        <i data-lucide="eye" class="w-4 h-4 mr-1"></i> Ver
+                                    </button>
                                 <?php endif; ?>
                             </td>
                         </tr>
                     <?php endwhile; ?>
                 <?php else : ?>
-                    <tr>
-                        <td colspan="8" class="px-6 py-4 text-center">
-                            No se encontraron resultados.
+                    <tr class="bg-white dark:bg-gray-800">
+                        <td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                             <div class="flex flex-col items-center justify-center space-y-3">
+                                <div class="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
+                                    <i data-lucide="clipboard-list" class="w-8 h-8 text-gray-400 dark:text-gray-500"></i>
+                                </div>
+                                <?php if (!empty($search_term)): ?>
+                                    <p class="text-lg font-medium text-gray-900 dark:text-gray-100">Sin resultados</p>
+                                    <p class="text-sm">No se encontraron pedidos que coincidan con "<strong><?php echo e($search_term); ?></strong>".</p>
+                                    <a href="index.php?page=pedidos" class="mt-2 text-green-600 hover:text-green-700 font-medium text-sm">Limpiar búsqueda</a>
+                                <?php else: ?>
+                                    <p class="text-lg font-medium text-gray-900 dark:text-gray-100">No hay pedidos</p>
+                                    <p class="text-sm">Aún no se han registrado pedidos en el sistema.</p>
+                                    <button class="mt-2 text-green-600 hover:text-green-700 font-medium text-sm" onclick="document.getElementById('add-order-btn').click()">
+                                        Crear el primer pedido
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+                            </div>
                         </td>
                     </tr>
                 <?php endif; ?>
@@ -215,11 +284,11 @@ function pagination_url($page_num, $search) {
     </div>
 </div>
 
-<div id="order-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 dark:bg-opacity-80 flex items-center justify-center hidden z-30">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-4xl max-h-[90vh] flex flex-col">
-        <div class="flex justify-between items-center mb-6">
+<div id="order-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 dark:bg-opacity-80 flex items-center justify-center hidden z-30 transition-opacity duration-300">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-4xl max-h-[90vh] flex flex-col transform transition-all duration-300 scale-100">
+        <div class="flex justify-between items-center mb-6 border-b dark:border-gray-700 pb-4">
             <h4 id="modal-title" class="text-2xl font-bold text-gray-800 dark:text-gray-100">Crear Nuevo Pedido</h4>
-            <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
         </div>
        
         <form id="order-form" class="flex-grow flex flex-col overflow-hidden">
@@ -231,65 +300,82 @@ function pagination_url($page_num, $search) {
             <div id="modal-message-container"></div>
             <div id="view-mode-status" class="hidden"></div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                    <label for="id_cliente" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente</label>
-                    <select id="id_cliente" name="id_cliente" required class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"></select>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="relative">
+                    <label for="cliente_search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente</label>
+                    <input type="text" id="cliente_search" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-shadow" placeholder="Buscar cliente..." autocomplete="off">
+                    <input type="hidden" id="id_cliente" name="id_cliente">
+                    <div id="cliente_search_results" class="absolute z-50 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto hidden"></div>
                 </div>
                 <div>
                     <label for="fecha_cotizacion" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha</label>
-                    <input type="date" id="fecha_cotizacion" name="fecha_cotizacion" required class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <input type="date" id="fecha_cotizacion" name="fecha_cotizacion" required class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-shadow">
                 </div>
                 <div class="md:col-span-2">
                     <label for="direccion_entrega" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección de Entrega</label>
-                    <input type="text" id="direccion_entrega" name="direccion_entrega" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" disabled>
+                    <input type="text" id="direccion_entrega" name="direccion_entrega" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-shadow" disabled>
                 </div>
             </div>
 
             <div id="add-item-section">
-                <div class="border dark:border-gray-700 rounded-lg p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                    <div class="md:col-span-4">
-                        <label for="producto_select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Producto</label>
-                        <select id="producto_select" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"></select>
+                <div class="bg-gray-50 dark:bg-gray-700/50 border dark:border-gray-600 rounded-lg p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+                    <div class="lg:col-span-4 relative sm:col-span-2">
+                        <label for="producto_search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Producto</label>
+                        <input type="text" id="producto_search" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Buscar producto..." autocomplete="off">
+                        <input type="hidden" id="id_producto_seleccionado">
+                        <div id="producto_search_results" class="absolute z-50 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto hidden"></div>
                     </div>
-                    <div class="md:col-span-3">
-                        <label for="cantidad" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Cantidad</label>
-                        <input type="number" id="cantidad" min="1" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
+                     <div class="lg:col-span-2">
+                        <label for="unidad_medida_display" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Unidad</label>
+                        <input type="text" id="unidad_medida_display" class="w-full px-4 py-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-lg select-none" readonly tabindex="-1">
                     </div>
-                    <div class="md:col-span-2">
-                        <label for="precio" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Precio Unit.</label>
-                        <input type="number" id="precio" min="0.01" step="0.01" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
+                    <div class="lg:col-span-2">
+                        <label for="peso_neto_display" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Peso</label>
+                        <input type="text" id="peso_neto_display" class="w-full px-4 py-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-lg select-none" readonly tabindex="-1">
                     </div>
-                    <div class="md:col-span-3 flex">
-                        <button type="button" id="add-item-btn" class="w-full flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-transform duration-300 hover:scale-105">
-                            <i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> Agregar
+                    <div class="lg:col-span-2">
+                        <label for="cantidad" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cantidad</label>
+                        <input type="number" id="cantidad" min="1" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <div class="lg:col-span-2">
+                        <label for="precio" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Precio Unit.</label>
+                        <input type="number" id="precio" min="0.01" step="0.01" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <div class="lg:col-span-12 sm:col-span-2 flex justify-end mt-2">
+                        <button type="button" id="add-item-btn" class="flex items-center justify-center bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0">
+                            <i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> Agregar Item
                         </button>
                     </div>
                 </div>
             </div>
            
-            <div class="flex-grow overflow-y-auto mt-4">
+            <div class="flex-grow overflow-y-auto mt-6 border dark:border-gray-700 rounded-lg">
                 <table class="w-full text-sm">
-                    <thead class="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-white">
+                    <thead class="sticky top-0 bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-white z-10 shadow-sm">
                         <tr>
-                            <th class="px-4 py-2 text-left text-xs font-semibold uppercase">Producto</th>
-                            <th class="px-4 py-2 text-xs font-semibold uppercase">Cantidad</th>
-                            <th class="px-4 py-2 text-xs font-semibold uppercase">Precio Unit.</th>
-                            <th class="px-4 py-2 text-right text-xs font-semibold uppercase">Subtotal</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Producto</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">Cantidad</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">Precio Unit.</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider">Subtotal</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">Acción</th>
                         </tr>
                     </thead>
-                    <tbody id="detalle-pedido-body"></tbody>
+                    <tbody id="detalle-pedido-body" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
                 </table>
             </div>
 
-            <div class="mt-6 pt-4 border-t dark:border-gray-700 flex justify-between items-center">
-                <div>
-                    <span class="text-lg font-bold text-gray-800 dark:text-gray-100">TOTAL:</span>
-                    <span id="total-pedido" class="text-2xl font-bold ml-2 text-gray-900 dark:text-white">$ 0.00</span>
+            <div class="mt-6 pt-4 border-t dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="flex items-baseline">
+                    <span class="text-xl font-bold text-gray-600 dark:text-gray-300">TOTAL:</span>
+                    <span id="total-pedido" class="text-3xl font-extrabold ml-3 text-gray-900 dark:text-white tracking-tight">$ 0.00</span>
                 </div>
-                <div class="flex space-x-4">
-                    <button type="button" id="cancel-btn" class="px-6 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-600 rounded-lg">Cancelar</button>
-                    <button type="submit" id="submit-btn" class="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">Crear Pedido</button>
+                <div class="flex space-x-3 w-full sm:w-auto">
+                    <button type="button" id="cancel-btn" class="flex-1 sm:flex-none justify-center px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-gray-200">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="submit-btn" class="flex-1 sm:flex-none justify-center px-6 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 shadow-md hover:shadow-lg transition-all focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        Crear Pedido
+                    </button>
                 </div>
             </div>
         </form>

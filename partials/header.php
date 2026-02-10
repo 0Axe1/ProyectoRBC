@@ -87,11 +87,7 @@ $permisos_usuario = $_SESSION['permisos'] ?? [];
                     <?php endif; ?>
 
                     <!-- ¡NUEVO! ENLACE DE CATEGORÍAS AÑADIDO -->
-                    <?php if (in_array('ver_categorias', $permisos_usuario)): ?>
-                    <a href="index.php?page=categorias" class="nav-link flex items-center px-3 py-2 rounded-lg font-medium text-sm <?php echo ($paginaActual == 'categorias') ? 'active' : 'inactive'; ?>">
-                        <i data-lucide="layout-grid" class="w-4 h-4 mr-2"></i> Categorías
-                    </a>
-                    <?php endif; ?>
+
                     <!-- FIN DE LO NUEVO -->
 
                     <?php if (in_array('ver_reportes', $permisos_usuario)): ?>
@@ -103,6 +99,13 @@ $permisos_usuario = $_SESSION['permisos'] ?? [];
                     <?php if (in_array('ver_usuarios', $permisos_usuario)): ?>
                     <a href="index.php?page=usuarios" class="nav-link flex items-center px-3 py-2 rounded-lg font-medium text-sm <?php echo ($paginaActual == 'usuarios') ? 'active' : 'inactive'; ?>">
                         <i data-lucide="user-cog" class="w-4 h-4 mr-2"></i> Usuarios
+                    </a>
+                    <?php endif; ?>
+
+                    <!-- ¡NUEVO! ENLACE DE DESHABILITADOS -->
+                    <?php if (isset($_SESSION['id_rol']) && $_SESSION['id_rol'] == 1): // Solo para Administradores ?>
+                    <a href="index.php?page=deshabilitados" class="nav-link flex items-center px-3 py-2 rounded-lg font-medium text-sm <?php echo ($paginaActual == 'deshabilitados') ? 'active' : 'inactive'; ?>">
+                        <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i> Papelera
                     </a>
                     <?php endif; ?>
                 </nav>

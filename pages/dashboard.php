@@ -1,102 +1,115 @@
 <?php
-// --- ¡CORREGIDO! ---
-// Se han actualizado las consultas para usar las columnas 'stock' y 'precio'
-// de la base de datos db_rbc_3nf.sql.
-
-// -- Ventas del Mes Actual (Compatible) --
-$query_ventas_mes = "SELECT SUM(total_venta) as total FROM ventas WHERE MONTH(fecha_venta) = MONTH(CURDATE()) AND YEAR(fecha_venta) = YEAR(CURDATE())";
-$result_ventas_mes = $pdo->query($query_ventas_mes);
-$ventas_mes = $result_ventas_mes->fetchColumn() ?? 0;
-
-// -- Pedidos Pendientes (Compatible) --
-$query_pedidos_pendientes = "SELECT COUNT(id_pedido) as total FROM pedidos WHERE id_estado_pedido = 1"; // 'Pendiente' es ID 1
-$result_pedidos_pendientes = $pdo->query($query_pedidos_pendientes);
-$pedidos_pendientes = $result_pedidos_pendientes->fetchColumn() ?? 0;
-
-// -- Valor Total del Inventario (¡CORREGIDO!) --
-// Se usa 'stock' y 'precio'
-$query_valor_inventario = "SELECT SUM(stock * precio) as total FROM productos WHERE activo = 1";
-$result_valor_inventario = $pdo->query($query_valor_inventario);
-$valor_inventario = $result_valor_inventario->fetchColumn() ?? 0;
-
-// --- 2. DATOS PARA GRÁFICOS Y LISTAS ---
-
-// -- Gráfico de Ventas Mensuales (Últimos 6 meses) --
-$chart_data = [];
-for ($i = 5; $i >= 0; $i--) {
-    $mes = date('Y-m', strtotime("-$i months"));
-   
-    $query_ventas = $pdo->prepare("SELECT SUM(total_venta) as total FROM ventas WHERE DATE_FORMAT(fecha_venta, '%Y-%m') = ?");
-    $query_ventas->execute([$mes]);
-    $total_ventas_mes = $query_ventas->fetchColumn() ?? 0;
-   
-    $chart_data['labels'][] = date('M Y', strtotime("-$i months"));
-    $chart_data['ventas'][] = $total_ventas_mes;
-}
-
-// -- Alertas de Bajo Stock (¡CORREGIDO!) --
-// Se usa 'stock'
-$query_bajo_stock = "SELECT nombre_producto, stock
-                     FROM productos
-                     WHERE stock < 50 AND activo = 1 
-                     ORDER BY stock ASC LIMIT 5";
-$productos_bajo_stock = $pdo->query($query_bajo_stock);
-
-// -- Top 5 Clientes (Compatible) --
-$query_top_clientes = "SELECT c.nombre_razon_social, SUM(v.total_venta) as total_comprado
-                       FROM ventas v
-                       JOIN pedidos p ON v.id_pedido = p.id_pedido
-                       JOIN clientes c ON p.id_cliente = c.id_cliente
-                       WHERE c.estado = 1
-                       GROUP BY c.id_cliente, c.nombre_razon_social
-                       ORDER BY total_comprado DESC LIMIT 5";
-$top_clientes = $pdo->query($query_top_clientes);
-
+// pages/dashboard.php
+// La conexión $pdo ya viene desde index.php, pero aquí ya no la usaremos para queries directas
+// ya que todo se manejará vía AJAX para permitir el filtrado dinámico.
 ?>
-<!-- Incluir Chart.js desde un CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- Inyectar los datos de PHP en una variable JS global -->
-<script>
-    const chartData = <?php echo json_encode($chart_data); ?>;
-</script>
+<div class="fade-in space-y-8">
+    
+    <!-- HEADER & FILTROS -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-800 dark:text-gray-100">Dashboard General</h2>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Visión general del rendimiento del negocio</p>
+        </div>
 
-<div class="fade-in">
+        <!-- Barra de Herramientas / Filtros -->
+        <div class="flex items-center gap-3 bg-white dark:bg-gray-800 p-2 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <!-- Icono Filtro -->
+            <div class="pl-2">
+                <i data-lucide="calendar" class="w-5 h-5 text-indigo-500"></i>
+            </div>
+
+            <!-- Selector Mes -->
+            <select id="filter-month" class="bg-transparent border-none text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                <?php
+                $meses = [
+                    1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+                    5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+                    9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+                ];
+                $currentMonth = date('n');
+                foreach ($meses as $num => $nombre) {
+                    $selected = ($num == $currentMonth) ? 'selected' : '';
+                    echo "<option value='{$num}' {$selected}>{$nombre}</option>";
+                }
+                ?>
+            </select>
+
+            <span class="text-gray-300">|</span>
+
+            <!-- Selector Año -->
+            <select id="filter-year" class="bg-transparent border-none text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                <?php
+                $currentYear = date('Y');
+                for ($y = $currentYear; $y >= $currentYear - 5; $y--) {
+                    echo "<option value='{$y}'>{$y}</option>";
+                }
+                ?>
+            </select>
+
+            <!-- Botón Actualizar (Opcional, ya que usaremos 'change' event) -->
+            <button id="btn-refresh" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Actualizar datos">
+                <i data-lucide="refresh-cw" class="w-4 h-4 text-gray-500"></i>
+            </button>
+        </div>
+    </div>
+
     <!-- 1. Encabezado Principal (KPI Cards) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <!-- Card: Ventas del Mes -->
-        <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-            <div class="flex items-center">
-                <div class="p-3 bg-green-100 dark:bg-green-900/50 rounded-full">
-                    <i data-lucide="trending-up" class="w-7 h-7 text-green-500 dark:text-green-400"></i>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Card: Ventas del Periodo -->
+        <div class="relative p-6 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/50 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden group">
+            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i data-lucide="trending-up" class="w-24 h-24 text-green-500"></i>
+            </div>
+            <div class="relative z-10">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                        <i data-lucide="dollar-sign" class="w-5 h-5 text-green-600 dark:text-green-400"></i>
+                    </div>
+                    <span class="text-sm font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider">Ventas</span>
                 </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Ventas del Mes</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">Bs. <?php echo number_format($ventas_mes, 2); ?></p>
+                <div class="mt-4">
+                    <h3 id="kpi-ventas" class="text-3xl font-extrabold text-gray-900 dark:text-white">--</h3>
+                    <p class="text-sm text-gray-500 mt-1">En el periodo seleccionado</p>
                 </div>
             </div>
         </div>
+
         <!-- Card: Pedidos Pendientes -->
-        <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-            <div class="flex items-center">
-                <div class="p-3 bg-yellow-100 dark:bg-yellow-900/50 rounded-full">
-                    <i data-lucide="clock" class="w-7 h-7 text-yellow-500 dark:text-yellow-400"></i>
+        <div class="relative p-6 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/50 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden group">
+            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i data-lucide="clock" class="w-24 h-24 text-amber-500"></i>
+            </div>
+            <div class="relative z-10">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                        <i data-lucide="package" class="w-5 h-5 text-amber-600 dark:text-amber-400"></i>
+                    </div>
+                    <span class="text-sm font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Pendientes</span>
                 </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Pedidos Pendientes</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100"><?php echo e($pedidos_pendientes); ?></p>
+                <div class="mt-4">
+                    <h3 id="kpi-pedidos" class="text-3xl font-extrabold text-gray-900 dark:text-white">--</h3>
+                    <p class="text-sm text-gray-500 mt-1">Pedidos por procesar</p>
                 </div>
             </div>
         </div>
+
         <!-- Card: Valor del Inventario -->
-        <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-            <div class="flex items-center">
-                <div class="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-full">
-                    <i data-lucide="archive" class="w-7 h-7 text-blue-500 dark:text-blue-400"></i>
+        <div class="relative p-6 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/50 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden group">
+             <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i data-lucide="archive" class="w-24 h-24 text-blue-500"></i>
+            </div>
+            <div class="relative z-10">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                        <i data-lucide="layers" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <span class="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Inventario</span>
                 </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Valor Inventario (Est.)</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">Bs. <?php echo number_format($valor_inventario, 2); ?></p>
+                <div class="mt-4">
+                    <h3 id="kpi-inventario" class="text-3xl font-extrabold text-gray-900 dark:text-white">--</h3>
+                    <p class="text-sm text-gray-500 mt-1">Valor total estimado</p>
                 </div>
             </div>
         </div>
@@ -104,54 +117,56 @@ $top_clientes = $pdo->query($query_top_clientes);
 
     <!-- 2. Gráficos y Secciones de Alertas -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
         <!-- Columna Principal (Gráfico) -->
-        <div class="lg:col-span-2 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Ventas (Últimos 6 Meses)</h3>
-            <div>
+        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200">Comportamiento de Ventas</h3>
+                <span class="text-xs font-medium px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">Diario</span>
+            </div>
+            <div class="relative bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4" style="height: 350px;">
                 <canvas id="salesChart"></canvas>
             </div>
         </div>
 
         <!-- Columna Secundaria (Alertas y Listas) -->
-        <div class="space-y-8">
+        <div class="space-y-6">
+            
+            <!-- Panel de Top Clientes -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                 <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                    <i data-lucide="award" class="w-5 h-5 text-amber-500"></i> Mejores Clientes
+                 </h3>
+                 <div id="list-top-clientes" class="space-y-3">
+                    <!-- Contenido cargado vía JS -->
+                    <div class="animate-pulse flex space-x-4">
+                        <div class="flex-1 space-y-2 py-1">
+                            <div class="h-2 bg-gray-200 rounded"></div>
+                            <div class="h-2 bg-gray-200 rounded w-3/4"></div>
+                        </div>
+                    </div>
+                 </div>
+            </div>
+
             <!-- Sección de Alertas -->
-            <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
-                    <i data-lucide="alert-triangle" class="w-5 h-5 mr-2 text-red-500"></i> Alertas de Inventario
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500"></i> Bajo Stock
                 </h3>
-                <div class="space-y-3">
-                    <?php if ($productos_bajo_stock->rowCount() > 0): ?>
-                        <?php while($producto = $productos_bajo_stock->fetch(PDO::FETCH_ASSOC)): ?>
-                            <div class="flex justify-between items-center text-sm p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                <p class="text-gray-700 dark:text-gray-300"><?php echo e($producto['nombre_producto']); ?></p>
-                                <!-- ¡CORREGIDO! Se usa 'stock' -->
-                                <span class="font-bold text-red-500"><?php echo e($producto['stock']); ?> Unid.</span>
-                            </div>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">No hay alertas de bajo stock.</p>
-                    <?php endif; ?>
+                <div id="list-alerta-stock" class="space-y-3">
+                    <!-- Contenido cargado vía JS -->
+                     <div class="animate-pulse flex space-x-4">
+                        <div class="flex-1 space-y-2 py-1">
+                            <div class="h-2 bg-gray-200 rounded"></div>
+                            <div class="h-2 bg-gray-200 rounded w-3/4"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
            
-            <!-- Panel de Top Clientes -->
-            <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
-                 <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
-                    <i data-lucide="award" class="w-5 h-5 mr-2 text-amber-500"></i> Top 5 Clientes
-                 </h3>
-                 <div class="space-y-3">
-                    <?php if ($top_clientes->rowCount() > 0): ?>
-                        <?php while($cliente = $top_clientes->fetch(PDO::FETCH_ASSOC)): ?>
-                            <div class="flex justify-between items-center text-sm p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                <p class="font-medium text-gray-800 dark:text-gray-200 truncate pr-4"><?php echo e($cliente['nombre_razon_social']); ?></p>
-                                <span class="font-semibold text-gray-600 dark:text-gray-300">Bs. <?php echo number_format($cliente['total_comprado'], 2); ?></span>
-                            </div>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">No hay datos de ventas para mostrar.</p>
-                    <?php endif; ?>
-                 </div>
-            </div>
         </div>
     </div>
 </div>
+
+<!-- Incluir Chart.js desde un CDN (Si no se incluye en header) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
