@@ -248,9 +248,11 @@ function pagination_url($page_num, $search) {
 
             <div id="add-item-section">
                 <div class="border dark:border-gray-700 rounded-lg p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                    <div class="md:col-span-4">
-                        <label for="producto_select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Producto</label>
-                        <select id="producto_select" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"></select>
+                    <div class="md:col-span-4 relative">
+                        <label for="producto_search" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Producto</label>
+                        <input type="text" id="producto_search" class="w-full px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Buscar producto..." autocomplete="off">
+                        <input type="hidden" id="id_producto_seleccionado">
+                        <div id="producto_search_results" class="absolute z-10 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
                     </div>
                     <div class="md:col-span-3">
                         <label for="cantidad" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Cantidad</label>

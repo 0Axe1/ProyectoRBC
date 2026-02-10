@@ -81,7 +81,7 @@
     $js_file_path = 'js/pages/' . $paginaActual . '.js';
     if (file_exists($js_file_path)) {
         // Se carga DESPUÉS de lucide
-        echo '<script src="' . e($js_file_path) . '"></script>';
+        echo '<script src="' . e($js_file_path) . '?v=' . time() . '"></script>';
     }
     // --- FIN DE LA SECCIÓN DE SCRIPTS ---
 

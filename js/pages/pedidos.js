@@ -23,7 +23,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const addItemSection = document.getElementById('add-item-section');
     const viewModeStatus = document.getElementById('view-mode-status');
-    const productoSelect = document.getElementById('producto_select');
+    // const productoSelect = document.getElementById('producto_select'); // REPLACED
+    const productoSearch = document.getElementById('producto_search');
+    const idProductoSeleccionado = document.getElementById('id_producto_seleccionado');
+    const productoSearchResults = document.getElementById('producto_search_results');
     const cantidadInput = document.getElementById('cantidad');
     const precioInput = document.getElementById('precio');
     const addItemBtn = document.getElementById('add-item-btn');
@@ -33,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const modalMessageContainer = document.getElementById('modal-message-container');
 
-    let productosDisponibles = [];
+    let productosDisponibles = []; // Ya no se carga todo al inicio, se usa para mantener el producto seleccionado actual
     let clientesDisponibles = [];
     let detallePedido = []; // Array de objetos: { id, nombre, cantidad, precio }
 
@@ -91,13 +94,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            productosDisponibles = data.productos;
-            if (productoSelect) {
-                productoSelect.innerHTML = '<option value="">Seleccione un producto</option>';
-                productosDisponibles.forEach(p => {
-                    productoSelect.innerHTML += `<option value="${p.id_producto}">${p.nombre_descriptivo} (Stock: ${p.stock ?? 0})</option>`;
-                });
-            }
+            // productosDisponibles = data.productos; // REMOVED: Load on demand
+            // if (productoSelect) {
+            //     productoSelect.innerHTML = '<option value="">Seleccione un producto</option>';
+            //     productosDisponibles.forEach(p => {
+            //         productoSelect.innerHTML += `<option value="${p.id_producto}">${p.nombre_descriptivo} (Stock: ${p.stock ?? 0})</option>`;
+            //     });
+            // }
             return data;
         } catch (error) {
             showModalError(`No se pudieron cargar los datos del formulario: ${error.message}`);
@@ -125,31 +128,92 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    // --- MEJORA! Auto-rellenar precio al seleccionar producto ---
-    if (productoSelect && precioInput) {
-        productoSelect.addEventListener('change', () => {
-            const idProducto = productoSelect.value;
-            const producto = productosDisponibles.find(p => p.id_producto == idProducto);
+    // --- Lógica de Búsqueda de Productos (Autocomplete) ---
+    let searchTimeout;
 
-            if (producto) {
-                precioInput.value = producto.precio || '';
-                // Opcional: Mostrar stock actual del producto seleccionado en algún lugar si se desea
-            } else {
-                precioInput.value = '';
+    if (productoSearch && productoSearchResults) {
+        productoSearch.addEventListener('input', (e) => {
+            const term = e.target.value.trim();
+            clearTimeout(searchTimeout);
+
+            if (term.length < 2) {
+                productoSearchResults.classList.add('hidden');
+                productoSearchResults.innerHTML = '';
+                return;
+            }
+
+            // Ensure High Z-Index for visibility over other modals/elements
+            productoSearchResults.classList.remove('z-10');
+            productoSearchResults.classList.add('z-50');
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`api/pedidos_actions.php?action=search_products&term=${encodeURIComponent(term)}`);
+                    const data = await response.json();
+
+                    productoSearchResults.innerHTML = '';
+                    if (data.length > 0) {
+                        data.forEach(p => {
+                            const div = document.createElement('div');
+                            div.className = 'px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer border-b dark:border-gray-600 last:border-0 text-gray-700 dark:text-gray-200';
+                            div.innerHTML = `
+                                <div class="font-bold">${p.nombre_descriptivo}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">ID: ${p.id_producto} | Stock: ${p.stock} | Precio: $${p.precio}</div>
+                            `;
+                            div.addEventListener('click', () => {
+                                selectProduct(p);
+                            });
+                            productoSearchResults.appendChild(div);
+                        });
+                        productoSearchResults.classList.remove('hidden');
+                    } else {
+                        productoSearchResults.innerHTML = '<div class="px-4 py-2 text-gray-500 dark:text-gray-400">No se encontraron productos.</div>';
+                        productoSearchResults.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('Error buscando productos:', error);
+                }
+            }, 300); // 300ms debounce
+        });
+
+        // Ocultar resultados al hacer clic fuera
+        document.addEventListener('click', (e) => {
+            if (!productoSearch.contains(e.target) && !productoSearchResults.contains(e.target)) {
+                productoSearchResults.classList.add('hidden');
             }
         });
+    }
+
+    // Función para seleccionar un producto
+    let currentSelectedProduct = null;
+
+    function selectProduct(product) {
+        currentSelectedProduct = product;
+        productoSearch.value = product.nombre_descriptivo;
+        idProductoSeleccionado.value = product.id_producto;
+        precioInput.value = product.precio;
+        productoSearchResults.classList.add('hidden');
+        productoSearchResults.innerHTML = '';
     }
 
     // --- Lógica de "Agregar Item" ---
     if (addItemBtn) {
         addItemBtn.addEventListener('click', () => {
             modalMessageContainer.innerHTML = '';
-            const idProducto = productoSelect.value;
+
+            // Defensive check: Ensure elements exist
+            if (!idProductoSeleccionado) {
+                showModalError('Error interno: No se encuentra el campo ID de producto. Por favor recargue la página (Ctrl+F5).');
+                console.error('Elemento id_producto_seleccionado es null');
+                return;
+            }
+
+            const idProducto = idProductoSeleccionado.value; // Usamos el input hidden
             const cantidad = parseInt(cantidadInput.value);
             const precio = parseFloat(precioInput.value);
 
             if (!idProducto) {
-                showModalError('Por favor, seleccione un producto.');
+                showModalError('Por favor, busque y seleccione un producto.');
                 return;
             }
             if (isNaN(cantidad) || cantidad <= 0) {
@@ -161,11 +225,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const producto = productosDisponibles.find(p => p.id_producto == idProducto);
-            if (!producto) {
-                showModalError('Producto no encontrado en la lista de disponibles.');
+            // Usamos el producto seleccionado guardado en la variable global temporal
+            const producto = currentSelectedProduct;
+
+            // Validación extra por seguridad, aunque el ID debería coincidir
+            if (!producto || producto.id_producto != idProducto) {
+                showModalError('Error al validar el producto seleccionado. Por favor busque nuevamente.');
                 return;
             }
+            // ... (resto de validación de stock es igual)
 
             // Calcular stock disponible considerando lo que ya está en el detalle del pedido
             const cantidadYaEnPedido = detallePedido
@@ -182,30 +250,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const existingItemIndex = detallePedido.findIndex(item => item.id == idProducto);
 
             if (existingItemIndex > -1) {
-                // Si el producto ya está, actualizar la cantidad y el precio si es diferente
                 detallePedido[existingItemIndex].cantidad += cantidad;
-                // Si queremos que el precio se actualice con el último precio ingresado:
                 detallePedido[existingItemIndex].precio = precio;
             } else {
+                // Usamos nombre_descriptivo si existe, sino el del producto
                 detallePedido.push({ id: idProducto, nombre: producto.nombre_descriptivo, cantidad, precio });
             }
 
-            // Actualizar el stock del producto en productosDisponibles localmente para reflejar la reserva
-            const prodIndex = productosDisponibles.findIndex(p => p.id_producto == idProducto);
-            if (prodIndex > -1) {
-                productosDisponibles[prodIndex].stock -= cantidad; // Reducir el stock localmente
-                // Actualizar el texto del option en el select
-                const optionEl = productoSelect.querySelector(`option[value="${idProducto}"]`);
-                if (optionEl) {
-                    optionEl.textContent = `${producto.nombre_descriptivo} (Stock: ${productosDisponibles[prodIndex].stock})`;
-                }
+            // NOTA: Con búsqueda ajax, ya no actualizamos "productosDisponibles" globalmente 
+            // porque no tenemos la lista completa.
+            // Simplemente reducimos el stock en nuestra copia local del producto seleccionado 
+            // para que si lo vuelve a intentar agregar sin buscar de nuevo, el stock esté actualizado.
+            if (currentSelectedProduct) {
+                currentSelectedProduct.stock -= cantidad;
             }
 
             renderDetalle(true);
 
-            productoSelect.value = '';
+            // Limpiar campos
+            if (productoSearch) productoSearch.value = '';
+            if (idProductoSeleccionado) idProductoSeleccionado.value = '';
             cantidadInput.value = '';
             precioInput.value = '';
+            currentSelectedProduct = null;
         });
     }
 
@@ -251,15 +318,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderDetalle(true);
 
                 // Restaurar stock en productosDisponibles localmente
-                const prodIndex = productosDisponibles.findIndex(p => p.id_producto == productId);
-                if (prodIndex > -1) {
-                    productosDisponibles[prodIndex].stock += cantidadRestaurar;
-                    // Actualizar el texto del option en el select
-                    const optionEl = productoSelect.querySelector(`option[value="${productId}"]`);
-                    if (optionEl) {
-                        optionEl.textContent = `${productosDisponibles[prodIndex].nombre_descriptivo} (Stock: ${productosDisponibles[prodIndex].stock})`;
-                    }
+                // NOTA: Al ser busqueda server-side, esto solo afecta al objeto en memoria si aun existe.
+                // Si el usuario busca de nuevo, traerá el stock real de BD (que aun no ha cambiado hasta que se guarde el pedido)
+                // Pero para consistencia visual inmediata si re-selecciona el mismo producto SIN buscar:
+                /* 
+                if (currentSelectedProduct && currentSelectedProduct.id_producto == productId) {
+                     currentSelectedProduct.stock += cantidadRestaurar;
                 }
+                */
             }
         });
     }
@@ -272,6 +338,13 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.textContent = 'Crear Pedido';
             formAction.value = 'create';
             formOrderId.value = '';
+
+            formOrderId.value = '';
+
+            // Reset search fields
+            if (productoSearch) productoSearch.value = '';
+            if (idProductoSeleccionado) idProductoSeleccionado.value = '';
+            currentSelectedProduct = null;
 
             detallePedido = [];
             renderDetalle(true);

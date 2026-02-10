@@ -43,25 +43,45 @@ try {
         $clientes_sql = "SELECT id_cliente, nombre_razon_social, ubicacion FROM clientes WHERE estado = 1 ORDER BY nombre_razon_social ASC";
         $response['clientes'] = $pdo->query($clientes_sql)->fetchAll(PDO::FETCH_ASSOC);
 
-        $productos_sql = "SELECT 
-                            p.id_producto, 
-                            CONCAT(
-                                p.nombre_producto, 
-                                ' (', 
-                                COALESCE(dp.variedad, 'Genérico'), 
-                                ', ', 
-                                COALESCE(dp.presentacion, 'N/A'), 
-                                ')'
-                            ) AS nombre_descriptivo,
-                            p.stock, 
-                            p.precio 
-                          FROM productos p
-                          LEFT JOIN detalle_producto dp ON p.id_producto = dp.id_producto
-                          WHERE p.activo = 1 ORDER BY p.nombre_producto ASC";
-        $response['productos'] = $pdo->query($productos_sql)->fetchAll(PDO::FETCH_ASSOC);
+        // OPTIMIZACIÓN: Ya no enviamos todos los productos, se buscarán por demanda
+        $response['productos'] = []; 
 
         echo json_encode($response);
     
+    
+    // --- BUSCAR PRODUCTOS (AUTOCOMPLETE) ---
+    } elseif ($action === 'search_products' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        $term = trim($_GET['term'] ?? '');
+        
+        if (strlen($term) < 2) {
+             echo json_encode([]);
+             exit;
+        }
+
+        $sql = "SELECT 
+                    p.id_producto, 
+                    CONCAT(
+                        p.nombre_producto, 
+                        ' (', 
+                        COALESCE(dp.variedad, 'Genérico'), 
+                        ', ', 
+                        COALESCE(dp.presentacion, 'N/A'), 
+                        ')'
+                    ) AS nombre_descriptivo,
+                    p.stock, 
+                    p.precio 
+                FROM productos p
+                LEFT JOIN detalle_producto dp ON p.id_producto = dp.id_producto
+                WHERE p.activo = 1 
+                AND (p.nombre_producto LIKE ? OR dp.variedad LIKE ? OR dp.descripcion LIKE ? OR p.id_producto LIKE ?)
+                ORDER BY p.nombre_producto ASC LIMIT 10";
+        
+        $stmt = $pdo->prepare($sql);
+        $likeTerm = '%' . $term . '%';
+        $stmt->execute([$likeTerm, $likeTerm, $likeTerm, $likeTerm]);
+        
+        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+
     // --- OBTENER DETALLES DE UN PEDIDO PARA EDITAR/VER ---
     } elseif ($action === 'get_order_details' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         $id_pedido = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
