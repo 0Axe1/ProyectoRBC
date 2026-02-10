@@ -3,11 +3,35 @@
 // Se eliminaron session_start(), function e() y la conexión PDO.
 // Ahora este archivo espera que $pdo exista desde index.php
 
+// --- 1. Configuración de Paginación y Búsqueda ---
+$limit = 10; // Registros por página
+$current_page = isset($_GET['p']) && is_numeric($_GET['p']) ? (int)$_GET['p'] : 1;
+if ($current_page < 1) $current_page = 1;
+$offset = ($current_page - 1) * $limit;
+
 // --- ¡NUEVO! Lógica de Búsqueda ---
 $search_term = trim($_GET['search'] ?? '');
 $params = [];
 // --- Fin de lo nuevo ---
 
+
+// --- 2. Consulta para obtener el total de registros (Paginación) ---
+$sql_count = "SELECT COUNT(*) FROM clientes c WHERE c.estado = 1";
+
+if (!empty($search_term)) {
+    $sql_count .= " AND (c.nombre_razon_social LIKE ? OR c.nit_ruc LIKE ?)";
+    $count_params = ['%' . $search_term . '%', '%' . $search_term . '%'];
+} else {
+    $count_params = [];
+}
+
+$stmt_count = $pdo->prepare($sql_count);
+$stmt_count->execute($count_params);
+$total_records = $stmt_count->fetchColumn();
+$total_pages = ceil($total_records / $limit);
+
+// Ajuste de seguridad
+if ($current_page > $total_pages && $total_pages > 0) $current_page = $total_pages;
 
 // --- ¡MODIFICADO! CONSULTA OPTIMIZADA SIN CONTACTOS EN LA PRINCIPAL ---
 $sql = "SELECT
@@ -33,8 +57,7 @@ if (!empty($search_term)) {
 }
 // --- Fin de lo nuevo ---
         
-$sql .= " ORDER BY
-            c.nombre_razon_social ASC";
+$sql .= " ORDER BY c.nombre_razon_social ASC LIMIT $limit OFFSET $offset";
          
 // --- ¡MODIFICADO! Usar prepared statement para la búsqueda ---
 $stmt = $pdo->prepare($sql);
@@ -216,7 +239,57 @@ $tipos_contacto = $stmt_tipos->fetchAll(PDO::FETCH_ASSOC);
             </tbody>
         </table>
     </div>
+
+    <!-- Paginación -->
+    <div class="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+            Mostrando <span class="font-semibold text-gray-800 dark:text-white"><?php echo $total_records > 0 ? $offset + 1 : 0; ?></span> 
+            a <span class="font-semibold text-gray-800 dark:text-white"><?php echo min($total_records, $offset + $limit); ?></span> 
+            de <span class="font-semibold text-gray-800 dark:text-white"><?php echo $total_records; ?></span> registros
+        </div>
+
+        <nav class="inline-flex -space-x-px rounded-md shadow-sm" aria-label="Paginación">
+            <!-- Botón Anterior -->
+            <?php if ($current_page > 1): ?>
+                <a href="<?php echo pagination_url($current_page - 1, $search_term); ?>" class="relative inline-flex items-center rounded-l-md px-3 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </a>
+            <?php else: ?>
+                <span class="relative inline-flex items-center rounded-l-md px-3 py-2 text-gray-300 dark:text-gray-600 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 cursor-not-allowed">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </span>
+            <?php endif; ?>
+
+            <!-- Info Página -->
+            <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 bg-gray-50 dark:bg-gray-800">
+                Página <?php echo $current_page; ?> de <?php echo max(1, $total_pages); ?>
+            </span>
+
+            <!-- Botón Siguiente -->
+            <?php if ($current_page < $total_pages): ?>
+                <a href="<?php echo pagination_url($current_page + 1, $search_term); ?>" class="relative inline-flex items-center rounded-r-md px-3 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                </a>
+            <?php else: ?>
+                <span class="relative inline-flex items-center rounded-r-md px-3 py-2 text-gray-300 dark:text-gray-600 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 cursor-not-allowed">
+                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                </span>
+            <?php endif; ?>
+        </nav>
+    </div>
 </div>
+
+<?php
+// Función auxiliar para mantener parámetros de búsqueda en los links de paginación
+function pagination_url($page_num, $search) {
+    // Nota: 'index.php?page=clientes' es la base
+    $url = "?page=clientes&p=" . $page_num;
+    if (!empty($search)) {
+        $url .= "&search=" . urlencode($search);
+    }
+    return $url;
+}
+?>
 
 <!-- MODAL PARA AGREGAR/EDITAR CLIENTE -->
 <div id="client-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 dark:bg-opacity-80 flex items-center justify-center hidden z-30">
